@@ -1,4 +1,4 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0E2233"><meta name="referrer" content="strict-origin-when-cross-origin"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%230E2233%22/%3E%3Cpath d=%22M8 22l6-12 4 7 2-3 4 8z%22 fill=%22%2321B5AE%22/%3E%3C/svg%3E"><style>*{box-sizing:border-box}body{margin:0}</style></head><body><title>Structiar Mina</title>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0E2233"><meta name="referrer" content="strict-origin-when-cross-origin"><title>Structiar Mina</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/favicon.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Structiar"><style>*{box-sizing:border-box}body{margin:0}</style></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -272,7 +272,7 @@ details.calc pre{white-space:pre-wrap;font:12px/1.65 var(--f-mono);background:va
 
 <div class="app" id="app">
   <aside class="side" aria-label="Navegación">
-    <div class="logo">STRUCT<b>IAR</b><small>Gestión de mina</small></div>
+    <div class="logo"><img src="icons/icon-192.png" alt="" width="36" height="36" style="float:left;margin:-4px 10px 0 0;border-radius:8px">STRUCT<b>IAR</b><small>Gestión de mina</small></div>
     <div class="mina" id="sMina"></div>
     <nav id="sNav"></nav>
     <div class="foot"><button type="button" class="fbk" data-fx="fbOpen">Danos tu opinión</button><div class="who" id="sWho"></div><div class="sync" id="sSync"></div></div>
@@ -434,7 +434,7 @@ details.calc pre{white-space:pre-wrap;font:12px/1.65 var(--f-mono);background:va
 .planbox{display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center;font-size:14px}
 </style>
 <div class="auth" id="auth" hidden><div style="width:100%;max-width:420px">
-  <div class="brand">STRUCT<b>IAR</b> MINA<small>Gestión de mina · prueba gratis de 7 días</small></div>
+  <div class="brand"><img src="icons/icon-192.png" alt="" width="64" height="64" style="display:block;margin:0 auto 10px;border-radius:14px">STRUCT<b>IAR</b> MINA<small>Gestión de mina · prueba gratis de 7 días</small></div>
   <div class="card" id="authCard"></div>
 </div></div>
 <script src="vendor/supabase-2.45.4.js"></script>
@@ -445,6 +445,15 @@ var BLANK='data:image/gif;base64,R0lGODlhAQABAAAAACw=';
 function $(s){return document.querySelector(s)}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 var sb=null;try{sb=window.supabase.createClient(S.url,S.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}})}catch(e){}
+function cget(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
+function cset(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function isNet(e){return !navigator.onLine||(!(e&&e.code)&&/Failed to fetch|NetworkError|Load failed|network/i.test((e&&e.message)||''))}
+var REF='';try{REF=new URL(S.url).hostname.split('.')[0]}catch(e){}
+var deferred=null;window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferred=e;var h=document.getElementById('instHint');if(h)h.innerHTML=instHTML();if(window.__structiarTeam)window.__structiarTeam()});
+function standalone(){return (window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone}
+function instHTML(){if(standalone())return '';if(deferred)return '<button class="lnk" type="button" data-a="install">Instalar la app en este equipo</button>';
+  if(/iphone|ipad|ipod/i.test(navigator.userAgent))return 'Para instalarla en iPhone: abre en Safari, toca Compartir y luego "Añadir a pantalla de inicio".';return ''}
+if('serviceWorker' in navigator)window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});
 var resolveCtx,ctxP=new Promise(function(r){resolveCtx=r});
 var DL={save:function(o){return new Promise(function(res,rej){try{var b=o.data instanceof Blob?o.data:new Blob([o.data]);var u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=String(o.filename||'archivo').replace(/[\\/:*?"<>|]+/g,'-');document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(u);a.remove()},2000);res()}catch(e){rej({code:'error'})}})}};
 window.claude={use:function(n){if(n==='db')return ctxP.then(function(c){return c.db});if(n==='user')return ctxP.then(function(c){return c.user});if(n==='downloads')return Promise.resolve(DL);return Promise.resolve(null)}};
@@ -467,7 +476,7 @@ function renderAuth(){
    '<form data-f="'+(su?'signup':'login')+'">'+msg+(su?'<label class="f">Tu nombre<input id="aName" required maxlength="80" autocomplete="name" placeholder="Ej.: Juan Pérez"></label>':'')+
    '<label class="f">Correo<input type="email" id="aEmail" required autocomplete="email"></label><label class="f">Contraseña<input type="password" id="aPass" minlength="8" required autocomplete="'+(su?'new-password':'current-password')+'"></label>'+
    '<button class="btn" type="submit">'+(su?'Crear cuenta y empezar la prueba':'Ingresar')+'</button>'+(su?'':'<button class="lnk" type="button" data-a="reset">Olvidé mi contraseña</button>')+'</form>'+
-   '<p class="fine">'+(su?'7 días gratis con todo, sin tarjeta. El módulo Pro de perforación y voladura queda libre 15 días. Tus datos son privados de tu mina.':'¿Te invitaron? Ingresa o crea tu cuenta y luego escribe el código de tu mina.')+'</p>')}
+   '<p class="fine">'+(su?'7 días gratis con todo, sin tarjeta. El módulo Pro de perforación y voladura queda libre 15 días. Tus datos son privados de tu mina.':'¿Te invitaron? Ingresa o crea tu cuenta y luego escribe el código de tu mina.')+'</p><p class="fine" id="instHint">'+instHTML()+'</p>')}
 function renderSetup(){
   var msg=authMsg?'<div class="msg'+(authMsg.err?' err':'')+'">'+esc(authMsg.t)+'</div>':'';
   card('<h2>Tu mina</h2><p class="lead">Crea el espacio de tu mina o únete al de tu equipo.</p>'+msg+
@@ -481,7 +490,9 @@ async function loadMina(){
   mina=m.minas;rol=m.rol;window.__mina=mina;window.__rol=rol;await loadMembers();return true}
 async function loadMembers(){var r=await sb.from('miembros').select('user_id,rol,nombre,email,unido').eq('mina_id',mina.id).order('unido');members=r.data||[]}
 async function afterAuth(){
-  try{var ok=await loadMina()}catch(e){authMsg={err:1,t:errMsg(e)};renderSetup();show(true);return}
+  var ok=false;try{ok=await loadMina();if(ok)cset('sm-ctx-'+uid,{mina:mina,rol:rol,members:members})}catch(e){var c=isNet(e)?cget('sm-ctx-'+uid):null;
+    if(c&&c.mina){mina=c.mina;rol=c.rol;members=c.members||[];window.__mina=mina;window.__rol=rol;ok=true}
+    else{card('<div class="msg err">'+esc(isNet(e)?'Sin conexión. La primera vez necesitas señal para entrar; después la app abre sin señal.':errMsg(e))+'</div><p class="fine"><button class="lnk" type="button" data-a="retry">Reintentar</button></p>');show(true);return}}
   if(!ok){authMsg=null;renderSetup();show(true);return}
   show(false);startCtx()}
 var started=false;
@@ -502,23 +513,39 @@ function mkDb(mid){
   var subs=[];
   function snapDocs(s){return {docs:Object.keys(s.map).map(function(k){var d=s.map[k];return {id:k,data:function(){return d},exists:true}}),size:Object.keys(s.map).length,empty:!Object.keys(s.map).length,metadata:{fromCache:false,hasPendingWrites:false}}}
   function pass(s,row){return !s.since||String(row.data&&row.data.fecha||'').slice(0,10)>=s.since}
-  async function fetchColl(s){var all={},from=0;for(;;){var q=sb.from('docs').select('id,data').eq('mina_id',mid).eq('coll',s.coll);if(s.since)q=q.gte('fecha',s.since);var r=await q.order('id').range(from,from+999);if(r.error)throw r.error;r.data.forEach(function(x){all[x.id]=x.data});if(r.data.length<1000)break;from+=1000}s.map=all;s.next(snapDocs(s))}
-  async function fetchDoc(s){var r=await sb.from('docs').select('data').eq('mina_id',mid).eq('coll',s.coll).eq('id',s.id).maybeSingle();if(r.error)throw r.error;s.val=r.data?r.data.data:null;s.next(docSnap(s))}
+  var CK='sm-c-'+mid+'-',OK='sm-out-'+mid,out=cget(OK)||[],warned=false,flushing=false;
+  async function fetchColl(s){var all={},from=0;try{for(;;){var q=sb.from('docs').select('id,data').eq('mina_id',mid).eq('coll',s.coll);if(s.since)q=q.gte('fecha',s.since);var r=await q.order('id').range(from,from+999);if(r.error)throw r.error;r.data.forEach(function(x){all[x.id]=x.data});if(r.data.length<1000)break;from+=1000}}
+    catch(e){if(!isNet(e))throw e;var c=cget(CK+s.coll)||{};all={};Object.keys(c).forEach(function(k){if(pass(s,{data:c[k]}))all[k]=c[k]});s.map=all;var sn=snapDocs(s);sn.metadata.fromCache=true;s.next(sn);return}
+    out.forEach(function(x){if(x.coll!==s.coll)return;if(x.op==='del')delete all[x.id];else all[x.id]=x.data});
+    s.map=all;cset(CK+s.coll,all);s.next(snapDocs(s))}
+  async function fetchDoc(s){var r;try{r=await sb.from('docs').select('data').eq('mina_id',mid).eq('coll',s.coll).eq('id',s.id).maybeSingle();if(r.error)throw r.error}
+    catch(e){if(!isNet(e))throw e;s.val=cget(CK+s.coll+'/'+s.id);var sn=docSnap(s);sn.metadata.fromCache=true;s.next(sn);return}
+    s.val=r.data?r.data.data:null;cset(CK+s.coll+'/'+s.id,s.val);s.next(docSnap(s))}
   function docSnap(s){return {id:s.id,exists:s.val!=null,data:function(){return s.val},metadata:{fromCache:false,hasPendingWrites:false}}}
+  function localApply(op,t,data){subs.forEach(function(s){if(s.coll!==t.coll)return;if(s.id){if(s.id===t.id){s.val=op==='del'?null:data;cset(CK+s.coll+'/'+s.id,s.val)}}else{if(op==='del')delete s.map[t.id];else s.map[t.id]=data;cset(CK+s.coll,s.map)}})}
+  function queue(op,t,data){out=out.filter(function(x){return !(x.coll===t.coll&&x.id===t.id)});out.push({op:op,coll:t.coll,id:t.id,data:data});cset(OK,out);localApply(op,t,data);
+    if(!warned){warned=true;toastX('Sin señal: se guarda en este equipo y se envía al volver la conexión.')}}
+  function send(x){return x.op==='del'?sb.from('docs').delete().eq('mina_id',mid).eq('coll',x.coll).eq('id',x.id):sb.from('docs').upsert({mina_id:mid,coll:x.coll,id:x.id,data:x.data})}
+  async function flush(){if(flushing||!out.length)return;flushing=true;var sent=0,lost=0;
+    while(out.length){var r;try{r=await send(out[0])}catch(e){r={error:e}}if(r.error&&isNet(r.error))break;out.shift();cset(OK,out);if(r.error)lost++;else sent++}
+    flushing=false;if(sent||lost){toastX(sent+(sent===1?' registro enviado':' registros enviados')+(lost?' · '+lost+' rechazados':''));subs.forEach(refetch)}if(!out.length)warned=false}
+  window.__structiarPend=function(){return out.length};setInterval(flush,30000);
   function refetch(s){(s.id?fetchDoc(s):fetchColl(s)).catch(function(e){s.err&&s.err(mkErr(e))})}
   var ch=sb.channel('docs-'+mid).on('postgres_changes',{event:'*',schema:'public',table:'docs',filter:'mina_id=eq.'+mid},function(p){
     var row=p.eventType==='DELETE'?p.old:p.new;if(!row||!row.coll)return;
     subs.forEach(function(s){if(s.coll!==row.coll)return;
       if(s.id){if(s.id!==row.id)return;s.val=p.eventType==='DELETE'?null:row.data;s.next(docSnap(s));return}
       if(p.eventType==='DELETE'||!pass(s,row))delete s.map[row.id];else s.map[row.id]=row.data;s.next(snapDocs(s))})});
-  var wasDown=false;ch.subscribe(function(st){if(st==='SUBSCRIBED'){if(wasDown)subs.forEach(refetch);wasDown=false}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED')wasDown=true});
-  window.addEventListener('online',function(){subs.forEach(refetch)});
+  var wasDown=false;ch.subscribe(function(st){if(st==='SUBSCRIBED'){flush();if(wasDown)subs.forEach(refetch);wasDown=false}else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'||st==='CLOSED')wasDown=true});
+  window.addEventListener('online',function(){if(out.length)flush();else subs.forEach(refetch)});
   document.addEventListener('visibilitychange',function(){if(!document.hidden&&wasDown)subs.forEach(refetch)});
   function split(path){var p=String(path).split('/');return {coll:p[0],id:p[1]}}
   function docRef(path){var t=split(path);return {
-    set:function(data){return sb.from('docs').upsert({mina_id:mid,coll:t.coll,id:t.id,data:data}).then(function(r){if(r.error)throw mkErr(r.error)})},
+    set:function(data){if(out.length||!navigator.onLine){queue('set',t,data);flush();return Promise.resolve()}
+      return send({op:'set',coll:t.coll,id:t.id,data:data}).then(function(r){if(r.error){if(isNet(r.error)){queue('set',t,data);return}throw mkErr(r.error)}localApply('set',t,data)},function(e){queue('set',t,data)})},
     update:function(data){return this.get().then(function(s){return docRef(path).set(Object.assign({},s.data()||{},data))})},
-    delete:function(){return sb.from('docs').delete().eq('mina_id',mid).eq('coll',t.coll).eq('id',t.id).then(function(r){if(r.error)throw mkErr(r.error)})},
+    delete:function(){if(out.length||!navigator.onLine){queue('del',t);flush();return Promise.resolve()}
+      return send({op:'del',coll:t.coll,id:t.id}).then(function(r){if(r.error){if(isNet(r.error)){queue('del',t);return}throw mkErr(r.error)}localApply('del',t)},function(e){queue('del',t)})},
     get:function(){var s={coll:t.coll,id:t.id,next:function(){}};return fetchDoc(s).then(function(){return docSnap(s)},function(e){throw mkErr(e)})},
     onSnapshot:function(next,err){var s={coll:t.coll,id:t.id,next:next,err:err};subs.push(s);refetch(s);return function(){subs=subs.filter(function(x){return x!==s})}}}}
   function coll(c,since){var q={where:function(f,op,v){return f==='fecha'&&(op==='>='||op==='gte')?coll(c,v):q},orderBy:function(){return q},limit:function(){return q},doc:function(id){return docRef(c+'/'+id)},
@@ -541,9 +568,11 @@ window.__structiarTeam=function(){var box=document.getElementById('teamBox');if(
      return '<tr><td><b>'+esc(m.nombre||(m.email||'').split('@')[0])+'</b>'+(me?' (tú)':'')+'<div class="note">'+esc(m.email||'')+'</div></td><td style="text-align:right">'+
       (adm&&!own?'<select data-a="rol" data-u="'+esc(m.user_id)+'">'+ROLES.map(function(r){return '<option value="'+r[0]+'"'+(r[0]===m.rol?' selected':'')+'>'+r[1]+'</option>'}).join('')+'<option value="quitar">Quitar de la mina</option></select>':'<span class="pill">'+esc((ROLES.filter(function(r){return r[0]===m.rol})[0]||['',m.rol])[1])+(own?' · dueño':'')+'</span>')+'</td></tr>'}).join('')+'</tbody></table>'+
    '<div class="note"><b>Colaborador</b>: registra disparos, controles, tareas y paradas. <b>Administrador</b>: además cambia los datos de la mina y el equipo. <b>Lector</b>: solo mira.</div>'+
-   '<div class="row"><button class="btn ghost sm" type="button" data-a="logout">Salir de mi cuenta</button></div></div>'};
+   '<div class="row">'+(deferred&&!standalone()?'<button class="btn sm" type="button" data-a="install">Instalar la app</button>':'')+'<button class="btn ghost sm" type="button" data-a="logout">Salir de mi cuenta</button></div></div>'};
 async function act(a,el){
   if(a==='login'||a==='signup'||a==='reset'){authMode=a;authMsg=null;renderAuth();return}
+  if(a==='retry'){location.reload();return}
+  if(a==='install'){if(deferred){deferred.prompt();deferred=null}return}
   if(a==='logout'){await sb.auth.signOut();location.reload();return}
   if(a==='copyCode'){var t='Te invito a nuestra mina en Structiar: '+location.origin+location.pathname+' · Crea tu cuenta y escribe el código '+mina.codigo;try{await navigator.clipboard.writeText(t);toastX('Invitación copiada')}catch(e){prompt('Copia la invitación:',t)}return}
   if(a==='newCode'){if(!confirm('El código anterior dejará de servir. ¿Cambiarlo?'))return;var r=await sb.rpc('nuevo_codigo',{p_mina:mina.id});if(r.error)return toastX(errMsg(r.error));mina.codigo=r.data;window.__structiarTeam();return}}
@@ -567,7 +596,8 @@ async function init(){
   sb.auth.onAuthStateChange(function(ev,session){if(ev==='PASSWORD_RECOVERY'){authMode='newpass';renderAuth();show(true);return}
     if(ev==='SIGNED_IN'&&session&&!uid){uid=session.user.id;email=session.user.email||'';afterAuth()}
     if(ev==='SIGNED_OUT'&&uid){location.reload()}});
-  var s=(await sb.auth.getSession()).data.session;
+  var s=null;try{s=(await sb.auth.getSession()).data.session}catch(e){}
+  if(!s){var raw=cget('sb-'+REF+'-auth-token');if(raw&&raw.user&&cget('sm-ctx-'+raw.user.id))s={user:raw.user}}
   if(s){uid=s.user.id;email=s.user.email||'';afterAuth()}else{renderAuth();show(true)}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

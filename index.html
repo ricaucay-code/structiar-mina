@@ -2,6 +2,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="description" content="Structiar Mina: control de intervalo corto, planificación Kanban y perforación y voladura para pequeña y mediana minería subterránea. Prueba gratis 7 días.">
+<link rel="icon" href="app/icons/favicon.png"><link rel="apple-touch-icon" href="app/icons/apple-touch-icon.png"><meta name="theme-color" content="#0E2233">
+<meta property="og:title" content="Structiar Mina · Gestión de mina"><meta property="og:description" content="Control de turno, plan y voladura para pequeña y mediana minería. Prueba gratis 7 días."><meta property="og:image" content="https://ricaucay-code.github.io/structiar-mina/img/og.png"><meta property="og:url" content="https://ricaucay-code.github.io/structiar-mina/"><meta property="og:type" content="website"><meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
@@ -196,7 +198,7 @@ footer a{color:var(--on-navy)}
 <header class="top">
   <div class="wrap">
     <a class="brand" href="#inicio" aria-label="Structiar Mina, inicio">
-      <svg width="32" height="32" aria-hidden="true"><use href="#mark"/></svg>
+      <img src="img/mark.png" alt="" width="36" height="36">
       Structiar <small>Mina</small>
     </a>
     <a class="btn btn-primary" href="app/">
@@ -284,7 +286,7 @@ footer a{color:var(--on-navy)}
     </div>
     <div class="conv">
       <div><svg width="22" height="22" aria-hidden="true"><use href="#ok"/></svg><span><strong>Multiusuario en tiempo real.</strong> Supervisores, perforistas y gerencia trabajan sobre los mismos datos.</span></div>
-      <div><svg width="22" height="22" aria-hidden="true"><use href="#ok"/></svg><span><strong>Funciona sin señal.</strong> Registras en interior mina y se sincroniza al volver.</span></div>
+      <div><svg width="22" height="22" aria-hidden="true"><use href="#ok"/></svg><span><strong>Funciona sin señal.</strong> Registras en interior mina y se envía solo al volver la conexión.</span></div>
       <div><svg width="22" height="22" aria-hidden="true"><use href="#ok"/></svg><span><strong>Celular y computadora.</strong> Con modo claro y oscuro para trabajar donde estés.</span></div>
     </div>
   </div>
@@ -299,7 +301,7 @@ footer a{color:var(--on-navy)}
       <div class="pro-list">
         <div class="pro-item"><h3>Motor de cálculo de malla</h3><p>Diseña la malla con corte Holmberg, burden y espaciamiento de contorno según la clase de roca.</p></div>
         <div class="pro-item"><h3>La solución en un dibujo</h3><p>Ves la malla dibujada, lista para explicarla al perforista en el frente.</p></div>
-        <div class="pro-item"><h3>Análisis con IA de fotos del frente</h3><p>Sube la foto del frente y obtén un análisis de apoyo para revisar el resultado del disparo.</p></div>
+        <div class="pro-item"><h3>El estándar de tu mina</h3><p>Configuras tu barra, broca, explosivo, tolerancias y sostenimiento por clase de roca. El motor diseña con tus reglas.</p></div>
       </div>
       <div class="qaqc">
         <span class="badge">El informe que más vale en la mina</span>
@@ -320,7 +322,7 @@ footer a{color:var(--on-navy)}
     <h2>Siete días con todo, sin tarjeta.</h2>
     <p class="lede">Pruebas con tu propia mina y tu propia gente. Si no te sirve, no pagas nada.</p>
     <div class="steps">
-      <div class="step"><b>1</b><h3>Creas tu cuenta</h3><p>Correo y contraseña. Sin tarjeta y sin instalar nada: funciona en el celular y en la computadora.</p></div>
+      <div class="step"><b>1</b><h3>Creas tu cuenta</h3><p>Correo y contraseña. Sin tarjeta. Funciona en el navegador y se puede instalar en el celular.</p></div>
       <div class="step"><b>2</b><h3>Creas tu mina e invitas a tu equipo</h3><p>Tu espacio privado arranca limpio. Tu equipo entra con un código de tu mina.</p></div>
       <div class="step"><b>3</b><h3>7 días con todo</h3><p>Control SIC, Kanban, turno, equipos y voladura. El módulo Pro (diseño de malla y QAQC) queda libre 15 días.</p></div>
       <div class="step"><b>4</b><h3>Eliges plan y pagas por PayPal</h3><p>Al terminar decides: Básico o Pro. El pago es mensual por PayPal.</p></div>
@@ -360,7 +362,7 @@ footer a{color:var(--on-navy)}
           <li>Motor de cálculo de malla (Holmberg, burden, contorno por clase de roca)</li>
           <li>Dibujo de la malla</li>
           <li>Informes QAQC de 8 criterios en PDF y CSV</li>
-          <li>Análisis con IA de fotos del frente</li>
+          <li>Estándar de la mina y tolerancias configurables</li>
         </ul>
         <a class="btn btn-primary" href="app/">Empieza con Pro gratis 15 días</a>
       </div>
@@ -369,12 +371,26 @@ footer a{color:var(--on-navy)}
   </div>
 </section>
 
+<section id="instalar">
+  <div class="wrap">
+    <span class="eyebrow">En tu celular</span>
+    <h2>Instálala como una app, sin tienda.</h2>
+    <p class="lede">Structiar Mina se abre desde el navegador y se instala en la pantalla de inicio. No ocupa casi espacio y se actualiza sola.</p>
+    <div class="steps">
+      <div class="step"><b>A</b><h3>Android</h3><p>Abre la app en Chrome, toca el menú ⋮ y elige «Instalar app» o «Añadir a pantalla de inicio».</p></div>
+      <div class="step"><b>i</b><h3>iPhone y iPad</h3><p>Abre la app en Safari, toca Compartir y luego «Añadir a pantalla de inicio».</p></div>
+      <div class="step"><b>PC</b><h3>Computadora</h3><p>En Chrome o Edge, pulsa el icono de instalar en la barra de direcciones, o úsala directo en el navegador.</p></div>
+    </div>
+    <div class="cta-row"><a class="btn btn-primary" href="app/">Abrir Structiar Mina</a></div>
+  </div>
+</section>
+
 <section id="faq">
   <div class="wrap faq">
     <span class="eyebrow">Preguntas frecuentes</span>
     <h2>Lo que nos preguntan en mina.</h2>
     <details><summary>¿Mis datos son privados?</summary><p>Sí. Cada mina tiene su propio espacio separado. Tus datos no se comparten con otros clientes ni los ve otra mina.</p></details>
-    <details><summary>¿Funciona sin señal en interior mina?</summary><p>Sí. Registras sin conexión y la información se sincroniza sola cuando vuelves a tener señal.</p></details>
+    <details><summary>¿Funciona sin señal en interior mina?</summary><p>Sí. Entras una primera vez con señal; después la app abre y registra sin conexión, y todo se envía solo cuando vuelve la señal.</p></details>
     <details><summary>¿Cuántos usuarios puedo tener?</summary><p>Ilimitados por mina. Supervisores, jefes de guardia, perforistas y gerencia entran con el mismo plan.</p></details>
     <details><summary>¿Puedo cancelar cuando quiera?</summary><p>Sí. El pago es mensual y cancelas cuando quieras, sin permanencia.</p></details>
     <details><summary>¿Qué pasa con mis datos si termina la prueba y no contrato?</summary><p>Se conservan 30 días en solo lectura. Si eliges un plan en ese tiempo, sigues trabajando donde lo dejaste.</p></details>
@@ -412,7 +428,7 @@ footer a{color:var(--on-navy)}
 
 <footer>
   <div class="wrap">
-    <a class="brand" href="#inicio"><svg width="26" height="26" aria-hidden="true"><use href="#mark"/></svg>Structiar <small>Mina</small></a>
+    <a class="brand" href="#inicio"><img src="img/mark.png" alt="" width="30" height="30">Structiar <small>Mina</small></a>
     <span>Gestión para pequeña y mediana minería subterránea · Ecuador, Perú, Bolivia, Colombia</span>
     <span><a href="app/">Entrar a la app</a> · <a href="#precios">Precios</a></span>
   </div>
