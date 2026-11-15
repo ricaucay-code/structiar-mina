@@ -336,7 +336,7 @@ details.calc pre{white-space:pre-wrap;font:12px/1.65 var(--f-mono);background:va
             <div class="panel"><div class="ph"><h3>Controles</h3></div><div class="tbl"><table id="tCtrl"></table></div>
               <form id="ctrlForm" class="w" style="border-top:1px dashed var(--line);margin-top:14px;padding-top:14px"></form></div>
           </div>
-          <div class="panel"><div class="ph"><h3>Cierre y traspaso</h3><button class="r btn sm" data-act="copyCierre">Copiar resumen para WhatsApp</button></div>
+          <div class="panel"><div class="ph"><h3>Cierre y traspaso</h3><span class="r row"><button class="btn sm" data-act="pdfTurno">Parte de turno en PDF</button><button class="btn ghost sm" data-act="copyCierre">Copiar para WhatsApp</button></span></div>
             <div class="g2"><label class="f">Novedades para el siguiente turno<textarea id="tCierre" class="wi" placeholder="Ej.: Galería 2 quedó perforada sin cargar. Falta agua en Crucero 120 hasta reparar la línea."></textarea></label>
             <label class="f">Resumen generado<textarea id="tResumen" class="code" readonly></textarea></label></div></div>
         </div>
@@ -1285,6 +1285,34 @@ function loadJsPDF(){return new Promise(function(res,rej){if(window.jspdf&&windo
 async function saveFile(name,data){var dl=null;try{dl=window.claude&&await window.claude.use('downloads')}catch(e){}
   if(!dl){toast('La descarga no está disponible en esta vista. Usa Copiar resumen.');return false}
   try{await dl.save({filename:name,data:data});toast('Archivo listo: '+name);return true}catch(e){if(e&&e.code!=='declined')toast('No se pudo descargar ('+(e.code||'error')+').');return false}}
+function csvCell(c){c=String(c==null?'':c);if(/^[=+\-@\t\r]/.test(c)&&!/^-?\d+([.,]\d+)?$/.test(c))c="'"+c;return /[;"\n\r]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c}
+function csvData(k){var rows=[];
+  if(k==='disparos'){rows.push(['fecha','turno','frente','tipo_frente','ancho_m','alto_m','barra_pies','perforado_m','taladros','taladros_cargados','explosivo_kg','avance_m','eficiencia_pct','volumen_m3','toneladas','factor_carga_kg_m3','kg_por_m','qaqc_resultado','nota']);
+    arr('disparos').sort(function(a,b){return String(a.fecha).localeCompare(String(b.fecha))||num(a.turno)-num(b.turno)}).forEach(function(d){var c=calc(d),fr=frente(d.frente)||{},q=d.qa&&d.qa.res;rows.push([d.fecha,sNames()[d.turno]||'',frName(d.frente),fr.tipo||'',num(d.ancho),num(d.alto),num(d.barra),num(d.perf),num(d.tal),num(d.talc),num(d.kg),num(d.avance),Math.round(c.eff*10)/10,Math.round(c.vol*100)/100,Math.round(c.ton*10)/10,Math.round(c.fc*100)/100,Math.round(c.kgm*100)/100,q||'',d.nota||''])})}
+  else if(k==='controles'){rows.push(['fecha','turno','hora_control','avance_acum_m','extraccion_acum_t','disparos_acum','causa_demora','minutos_perdidos','nota']);
+    arr('controles').sort(function(a,b){return String(a.fecha).localeCompare(String(b.fecha))||num(a.i)-num(b.i)||num(a.h)-num(b.h)}).forEach(function(c){rows.push([c.fecha,sNames()[c.i]||'',num(c.h),num(c.av),num(c.t),num(c.dis),c.causa||'',num(c.min),c.nota||''])})}
+  else{rows.push(['equipo','tipo','inicio','fin','horas','causa','nota']);
+    arr('paradas').sort(function(a,b){return String(a.inicio).localeCompare(String(b.inicio))}).forEach(function(x){var e=D.equipos[x.equipo]||{},a=Date.parse(x.inicio),b=x.fin?Date.parse(x.fin):Date.now();rows.push([e.nombre||'',e.tipo||'',x.inicio||'',x.fin||'',isFinite(b-a)?Math.round((b-a)/36e4)/10:'',x.causa||'',x.nota||''])})}
+  if(rows.length<2){toast('Todavía no hay datos para exportar.');return}
+  saveFile('Structiar-'+k+'-'+nowShift().fecha+'.csv','\ufeff'+rows.map(function(r){return r.map(csvCell).join(';')}).join('\n'))}
+async function pdfTurno(){var c=curT(),t=tGet(c.f,c.i),r=realOf(c.f,c.i);toast('Preparando el PDF…');var J;try{J=await loadJsPDF()}catch(e){toast('No se pudo cargar el generador de PDF. Revisa la conexión.');return}
+  var doc=new J({unit:'mm',format:'a4'}),W=210,M=16,y=32;
+  doc.setFillColor(11,42,64);doc.rect(0,0,W,22,'F');doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(15);doc.text('STRUCT',M,13);doc.setTextColor(0,171,181);doc.text('IAR',M+doc.getTextWidth('STRUCT'),13);
+  doc.setTextColor(200,222,228);doc.setFont('helvetica','normal');doc.setFontSize(8.5);doc.text(pdfTxt('Gestión de mina · Parte de turno'),M,18);doc.text(pdfTxt(cfg().nombre),W-M,13,{align:'right'});doc.setTextColor(12,30,42);
+  function h2(x){if(y>262){doc.addPage();y=20}doc.setFont('helvetica','bold');doc.setFontSize(12);doc.text(pdfTxt(x),M,y);y+=2;doc.setDrawColor(0,124,133);doc.setLineWidth(0.5);doc.line(M,y,W-M,y);y+=6;doc.setFont('helvetica','normal');doc.setFontSize(10)}
+  function ln(x,b){var parts=doc.splitTextToSize(pdfTxt(x),W-2*M);parts.forEach(function(q){if(y>280){doc.addPage();y=20}doc.setFont('helvetica',b?'bold':'normal');doc.text(q,M,y);y+=5.2})}
+  function row(cols,ws,b){if(y>280){doc.addPage();y=20}var x=M;doc.setFont('helvetica',b?'bold':'normal');doc.setFontSize(9.5);cols.forEach(function(q,i){doc.text(pdfTxt(String(q)).slice(0,Math.floor(ws[i]/1.7)),x,y);x+=ws[i]});y+=5.4;if(b){doc.setDrawColor(200,210,215);doc.setLineWidth(0.2);doc.line(M,y-3.6,W-M,y-3.6)}}
+  doc.setFont('helvetica','bold');doc.setFontSize(16);doc.text(pdfTxt(sLabel(c.i)+' · '+fDate(c.f)),M,y);y+=6;doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(90,110,120);doc.text(pdfTxt(sHours(c.i)+(meProf&&meProf.name?' · Elaborado por '+meProf.name:'')),M,y);doc.setTextColor(12,30,42);y+=10;
+  h2('Plan contra real');var ws=[58,34,34,34];row(['Indicador','Meta','Real','Cumplimiento'],ws,1);
+  [['Avance (m)',num(t.plan.av),r.av,1],['Extracción (t)',num(t.plan.t),r.t,0],['Disparos',num(t.plan.dis),r.dis,0]].forEach(function(k){row([k[0],k[3]?f1(k[1]):f0(k[1]),k[3]?f1(k[2]):f0(k[2]),k[1]?f0(k[2]/k[1]*100)+' %':'-'],ws)});y+=4;
+  h2('Voladuras del turno');if(r.shots.length){var w2=[52,22,22,22,24,22,14];row(['Frente','Perf. m','Avance m','Efic. %','Explos. kg','FC kg/m3','Tal.'],w2,1);r.shots.forEach(function(d){var k=calc(d);row([frName(d.frente),f2(num(d.perf)),f2(num(d.avance)),f0(k.eff),f1(num(d.kg)),f2(k.fc),f0(num(d.tal))],w2)})}else ln('Sin disparos registrados en el turno.');y+=4;
+  h2('Controles y demoras');if(r.ctrls.length){var w3=[16,24,24,44,18,52];row(['Hora','Avance m','Extr. t','Causa de demora','Min','Nota'],w3,1);var tm=0;r.ctrls.forEach(function(x){tm+=num(x.min);row([f0(num(x.h))+' h',f1(num(x.av)),f0(num(x.t)),x.causa||'-',num(x.min)?f0(num(x.min)):'-',x.nota||''],w3)});y+=1;ln('Minutos perdidos en el turno: '+f0(tm),1)}else ln('Sin controles registrados.');y+=4;
+  var eq=arr('equipos').filter(function(e){return e.estado==='rep'});h2('Equipos');ln(eq.length?'Parados al cierre: '+eq.map(function(e){return e.nombre}).join(', '):'Todos los equipos operativos al cierre.');y+=4;
+  var bq=arr('tareas').filter(function(x){return x.bloq&&x.col!=='hecho'});if(bq.length){h2('Bloqueos abiertos');bq.forEach(function(x){ln('- '+x.titulo+' ('+frName(x.frente)+'): '+x.bloq)});y+=4}
+  h2('Novedades y traspaso');ln(t.cierre||'Sin novedades registradas.');y+=14;
+  if(y>262){doc.addPage();y=40}doc.setDrawColor(120,140,150);doc.setLineWidth(0.3);doc.line(M,y,M+70,y);doc.line(W-M-70,y,W-M,y);y+=5;doc.setFontSize(9);doc.setTextColor(90,110,120);doc.text('Entrega el turno',M,y);doc.text('Recibe el turno',W-M-70,y);
+  doc.setFontSize(8);doc.text(pdfTxt('Generado con Structiar Mina · '+new Date().toLocaleString('es-EC')),M,290);
+  saveFile('Parte-de-turno-'+c.f+'-'+pdfTxt(sNames()[c.i]||'').replace(/[^\w\-]+/g,'-')+'.pdf',doc.output('blob'))}
 async function pdfQA(){
   var X=infData();toast('Preparando el PDF…');var J;try{J=await loadJsPDF()}catch(e){toast('No se pudo cargar el generador de PDF. Revisa la conexión.');return}
   var doc=new J({unit:'mm',format:'a4'}),W=210,M=16,y=0,page=1;
@@ -1360,7 +1388,7 @@ function renderMina(full){
    (arr('frentes').length?arr('frentes').sort(function(a,b){return a.nombre.localeCompare(b.nombre)}).map(function(f){var o=st[f.id],e=o?o.e/o.n:0;return '<tr><td><b>'+esc(f.nombre)+'</b></td><td>'+esc(f.tipo)+'</td><td class="n">'+f1(num(f.ancho))+' × '+f1(num(f.alto))+'</td><td class="n">'+(o?o.n:0)+'</td><td class="n">'+(o?f1(o.av):'0,0')+'</td><td>'+(o?'<span class="pill '+effClass(e)+'">'+f0(e)+' %</span>':'<span class="mute">—</span>')+'</td><td><span class="pill '+(f.activo?'ok':'n')+'">'+(f.activo?'Activo':'Pausado')+'</span></td><td class="w"><button class="btn ghost sm" data-act="editFr" data-id="'+esc(f.id)+'">Editar</button></td></tr>'}).join(''):'<tr><td colspan="8" class="mute">Agrega tu primer frente para empezar.</td></tr>')+'</tbody>';
   if(full)frForm();if(window.__structiarTeam)window.__structiarTeam();
   $('#roleNote').textContent=mode==='db'?('Tu acceso: '+(canAdmin?'Editor':canWrite?'Colaborador':'Lector')+'.'):'Ahora mismo los datos se guardan solo en este equipo. Abre la página con tu cuenta de Claude para compartirlos.';
-  var b='<button class="btn sm" data-act="copyBackup">Copiar respaldo</button>';
+  var b='<button class="btn sm" data-act="csvDisp">Disparos (CSV)</button><button class="btn sm" data-act="csvCtrl">Controles de turno (CSV)</button><button class="btn sm" data-act="csvPar">Paradas de equipos (CSV)</button><button class="btn ghost sm" data-act="copyBackup">Copiar respaldo</button>';
   if(mode!=='db'||canAdmin)b+='<button class="btn ghost sm" data-act="restore">Restaurar desde el texto</button>';
   if(cfg().demo&&(mode!=='db'||canAdmin))b+=ui.confirm==='demo'?'':'<button class="btn ghost sm" data-act="askClearDemo">Borrar datos de ejemplo</button>';
   else if(mode==='db'&&canAdmin&&!window.__mina&&!arr('frentes').length)b+='<button class="btn ghost sm" data-act="loadDemo">Cargar ejemplo</button>';
@@ -1396,6 +1424,10 @@ document.addEventListener('click',function(e){
   case 'qaAction':var dq=D.disparos[ui.qaId];if(!dq)return;qaRead();var rq2=qaEval(dq,qaDraft),tid2=uid();put('tareas',{id:tid2,titulo:'QAQC '+frName(dq.frente)+': '+rq2.fails.map(function(c){return c.l.toLowerCase()}).join(', '),frente:dq.frente,tipo:'Acción',col:'hacer',resp:'',fecha:nowShift().fecha,prio:'P1',bloq:'',origen:'No conformidad QAQC del disparo del '+fDate(dq.fecha)+' · '+rq2.fails.map(function(c){return QACT[c.k]}).join(' ')});toast('Acción creada en el tablero');return;
   case 'infPer':ui.infPer=b.dataset.v;renderInf();return;
   case 'pdfQA':pdfQA();return;
+  case 'pdfTurno':pdfTurno();return;
+  case 'csvDisp':csvData('disparos');return;
+  case 'csvCtrl':csvData('controles');return;
+  case 'csvPar':csvData('paradas');return;
   case 'csvQA':csvQA();return;
   case 'copyQA':copy(qaSummaryText(infData()),null);return;
   case 'askClearDemo':ui.confirm='demo';schedule(true);return;
