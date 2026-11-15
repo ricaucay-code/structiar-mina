@@ -1,0 +1,44 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Structiar · Administración</title>
+<style>
+:root{--bg:#EEF2F4;--surface:#fff;--surface2:#F5F8F9;--ink:#0F1E2B;--mute:#5A6B78;--line:#D5DEE3;--band:#0E2233;--band-ink:#EAF2F6;--accent:#0E8C86;--ok:#257A48;--ok-bg:#E0F1E6;--warn:#8F5A00;--warn-bg:#FAEED6;--bad:#AE3527;--bad-bg:#F7E1DD;font-family:"Segoe UI",Roboto,Arial,sans-serif}
+@media (prefers-color-scheme:dark){:root{--bg:#0B141B;--surface:#122029;--surface2:#172833;--ink:#E3EDF2;--mute:#93A7B4;--line:#24384A;--band:#060D12;--accent:#3CC2BA;--ok:#5EC48C;--ok-bg:#10301D;--warn:#E3A63B;--warn-bg:#35280C;--bad:#F2826F;--bad-bg:#3A1814;color-scheme:dark}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5}
+header{background:var(--band);color:var(--band-ink);padding:14px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}header b{color:var(--accent)}header button{margin-left:auto}
+main{max-width:1200px;margin:0 auto;padding:18px 16px 40px;display:grid;gap:16px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,160px),1fr));gap:12px}.kpi{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px}.kpi small{display:block;color:var(--mute);font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:600}.kpi b{font-size:26px}
+.tbl{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:14px}th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}.ok{background:var(--ok-bg);color:var(--ok)}.warn{background:var(--warn-bg);color:var(--warn)}.bad{background:var(--bad-bg);color:var(--bad)}
+input,select,button{font:inherit;color:inherit}input,select{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 8px;min-height:36px}
+button{background:var(--accent);color:#fff;border:0;border-radius:6px;padding:7px 12px;font-weight:600;cursor:pointer;min-height:36px}button.g{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.note{color:var(--mute);font-size:12.5px}.fb li{margin-bottom:8px}
+form.login{max-width:380px;margin:8vh auto;display:grid;gap:10px}
+</style></head><body>
+<header><div><b>STRUCTIAR</b> · Administración</div><button class="g" id="out" hidden style="color:var(--band-ink);border-color:#ffffff40">Salir</button></header>
+<main id="m"></main>
+<script src="../app/vendor/supabase-2.45.4.js"></script>
+<script>window.STRUCTIAR_CFG={"url": "https://qxcqzdytpcwgzsaaabsx.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4Y3F6ZHl0cGN3Z3pzYWFhYnN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ3NDkzNTksImV4cCI6MjExMDMyNTM1OX0._ZvvI5_iU0Jau6Ljdkn27tdCF24SQ7ZwEFcvdEgBHCw"};</script>
+<script>
+(function(){'use strict';var C=window.STRUCTIAR_CFG,sb=supabase.createClient(C.url,C.key),M=document.getElementById('m');
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function d10(x){return x?String(x).slice(0,10):'—'}function dias(x){return x?Math.ceil((Date.parse(x)-Date.now())/864e5):null}
+function login(msg){M.innerHTML='<form class="login panel"><h2 style="margin:0">Administración</h2>'+(msg?'<div class="pill bad">'+esc(msg)+'</div>':'')+'<input type="email" id="e" placeholder="Correo" required><input type="password" id="p" placeholder="Contraseña" required><button>Ingresar</button></form>';
+  M.querySelector('form').onsubmit=async function(ev){ev.preventDefault();var r=await sb.auth.signInWithPassword({email:document.getElementById('e').value,password:document.getElementById('p').value});if(r.error)return login('Correo o contraseña incorrectos');boot()}}
+async function boot(){var s=(await sb.auth.getSession()).data.session;if(!s)return login();document.getElementById('out').hidden=false;
+  var a=await sb.rpc('es_admin_global');if(!a.data){M.innerHTML='<div class="panel">Esta cuenta no tiene permiso de administración.</div>';return}
+  var mi=await sb.from('minas').select('*').order('creado',{ascending:false}),mb=await sb.from('miembros').select('mina_id,rol,nombre,email'),us=await sb.from('uso').select('mina_id,user_id,fecha,regs').gte('fecha',new Date(Date.now()-7*864e5).toISOString().slice(0,10)),fb=await sb.from('feedback').select('*').order('creado',{ascending:false}).limit(50);
+  var minas=mi.data||[],now=Date.now();
+  function st(x){var pag=(x.plan==='basico'||x.plan==='pro')&&Date.parse(x.plan_fin)>now,tr=Date.parse(x.trial_fin)>now;if(x.plan==='baja')return ['bad','Baja'];if(pag)return dias(x.plan_fin)<=3?['warn','Cobrar · vence '+d10(x.plan_fin)]:['ok',(x.plan==='pro'?'Pro':'Básico')+' hasta '+d10(x.plan_fin)];if(tr)return dias(x.trial_fin)<=1?['warn','Prueba: último día']:['ok','Prueba · '+dias(x.trial_fin)+' días'];return ['bad','Prueba vencida']}
+  var pag=minas.filter(function(x){return (x.plan==='basico'||x.plan==='pro')&&Date.parse(x.plan_fin)>now});
+  M.innerHTML='<div class="kpis"><div class="kpi"><small>Minas</small><b>'+minas.length+'</b></div><div class="kpi"><small>En prueba</small><b>'+minas.filter(function(x){return Date.parse(x.trial_fin)>now&&!pag.includes(x)}).length+'</b></div><div class="kpi"><small>Pagando</small><b>'+pag.length+'</b></div><div class="kpi"><small>Ingreso mensual</small><b>USD '+pag.reduce(function(s,x){return s+(x.plan==='pro'?99:29)},0)+'</b></div><div class="kpi"><small>Usuarios</small><b>'+(mb.data||[]).length+'</b></div></div>'+
+   '<div class="panel"><h3 style="margin-top:0">Minas</h3><div class="tbl"><table><thead><tr><th>Mina</th><th>Estado</th><th>Creada</th><th>Pro gratis hasta</th><th>Usuarios</th><th>Registros 7 d</th><th>Activar plan (al confirmar pago)</th></tr></thead><tbody>'+
+   minas.map(function(x){var s=st(x),mm=(mb.data||[]).filter(function(y){return y.mina_id===x.id}),ow=mm.filter(function(y){return y.rol==='admin'})[0]||{},u7=(us.data||[]).filter(function(y){return y.mina_id===x.id}),reg=u7.reduce(function(t,y){return t+(y.regs||0)},0),uu=new Set(u7.map(function(y){return y.user_id})).size;
+    var nf=new Date(Math.max(now,Date.parse(x.plan_fin||0)||0)+30*864e5).toISOString().slice(0,10);
+    return '<tr><td><b>'+esc(x.nombre)+'</b><div class="note">'+esc(ow.nombre||'')+' · '+esc(ow.email||'')+'</div><div class="note">Código '+esc(x.codigo)+'</div></td><td><span class="pill '+s[0]+'">'+esc(s[1])+'</span></td><td>'+d10(x.creado)+'</td><td>'+d10(x.pro_fin)+'</td><td>'+mm.length+' ('+uu+' activos)</td><td>'+reg+'</td><td><div class="row" data-m="'+esc(x.id)+'"><select><option value="basico">Básico USD 29</option><option value="pro">Pro USD 99</option><option value="baja">Dar de baja</option></select><input type="date" value="'+nf+'"><button data-a="plan">Guardar</button></div></td></tr>'}).join('')+'</tbody></table></div><p class="note">Al confirmar un pago en PayPal, elige el plan y la fecha hasta la que cubre (normalmente 30 días más) y pulsa Guardar. La app de esa mina se habilita al instante.</p></div>'+
+   '<div class="panel"><h3 style="margin-top:0">Opiniones</h3><ul class="fb">'+((fb.data||[]).map(function(f){var mn=(minas.filter(function(x){return x.id===f.mina_id})[0]||{}).nombre;return '<li>'+(f.nota?'<b>'+f.nota+'/5</b> · ':'')+esc(f.texto||'')+' <span class="note">— '+esc(mn||'')+' · '+esc(f.vista||'')+' · '+d10(f.creado)+'</span></li>'}).join('')||'<li class="note">Aún no hay opiniones.</li>')+'</ul></div>';
+}
+M.addEventListener('click',async function(e){var b=e.target.closest('[data-a=plan]');if(!b)return;var r=b.closest('[data-m]'),pl=r.querySelector('select').value,f=r.querySelector('input').value;
+  if(!confirm('¿Aplicar '+pl+' hasta '+f+'?'))return;b.disabled=true;var x=await sb.rpc('admin_plan',{p_mina:r.dataset.m,p_plan:pl,p_fin:f});if(x.error)alert(x.error.message);boot()});
+document.getElementById('out').onclick=async function(){await sb.auth.signOut();location.reload()};
+boot()})();
+</script></body></html>
