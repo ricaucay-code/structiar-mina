@@ -23,9 +23,9 @@ var SERIES={
  ELEC:{nombre:'Electrónico (programable)',paso:25}
 };
 var CORTES={
- quemado2:'Quemado de 2 secciones (corte paralelo)',
+ quemado2:'Quemado por secciones (Holmberg, corte paralelo)',
  quemado1:'Quemado de 1 sección',
- cuna:'Cuña (V)',
+ cuna:'Cuña en V (escalada a la profundidad)',
  quemadoH:'Quemado en H (2 alivios horizontales)',
  linea:'Quemado en línea (ranura)'
 };
@@ -41,7 +41,8 @@ function defaults(){return {
  tiempos:{serie:'MS',disp:3},
  vibr:{dist:30,lim:100,K:1140,beta:1.6},
  costos:{perf:2.2,rima:6,det:3.2,booster:0,linea:15,manoMin:5,manoHH:9.5,mecha:0},
- sismos:[]
+ sismos:[],
+ ref:{n:null,kg:null,av:null,espC:null,rws:null}
 }}
 
 /* ---------- geometría ---------- */
@@ -81,8 +82,9 @@ function generarCorte(d,cx,cy){var c=d.corte,phi=corteAvance(c.dAliv,c.nAliv).ph
   var na=Math.max(0,Math.round(c.nAliv)),sepA=c.dAliv/1000*1.15;
   if(c.tipo==='quemadoH'||c.tipo==='linea'){for(var i=0;i<na;i++)h.push({x:cx+(i-(na-1)/2)*sepA,y:cy,t:'alivio',g:'Alivio'})}
   else if(c.tipo!=='cuna'){for(var j=0;j<na;j++){var ang=2*PI*j/na+(na===4?PI/4:0);h.push({x:cx+(na>1?sepA/2*Math.cos(ang):0),y:cy+(na>1?sepA/2*Math.sin(ang):0),t:'alivio',g:'Alivio'})}}
-  if(c.tipo==='cuna'){var pares=3,dy=0.45;for(var p=0;p<pares;p++){var yy=cy+(p-(pares-1)/2)*dy;h.push({x:cx-0.5,y:yy,t:'arranque',g:'Arranque',sec:1});h.push({x:cx+0.5,y:yy,t:'arranque',g:'Arranque',sec:1})}
-    return {holes:h,B1:0.5,B2:0,secciones:1}}
+  if(c.tipo==='cuna'){var V=cunaV(d);V.vs.forEach(function(v,k){for(var p=0;p<V.filas;p++){var yy=cy+(p-(V.filas-1)/2)*V.dy;
+      h.push({x:cx-v.x,y:yy,t:'arranque',g:k<1?'Arranque':'Ayudas',sec:k+1,inc:v.ang});h.push({x:cx+v.x,y:yy,t:'arranque',g:k<1?'Arranque':'Ayudas',sec:k+1,inc:v.ang})}});
+    return {holes:h,B1:V.vs[0].x,B2:0,secciones:V.vs.length,secs:V.vs.map(function(v,k){return {n:k+1,dist:v.x,B:v.B,W:2*v.x,ang:0,L:v.L}}),cuna:V}}
   var o=arguments[3]||{},L=+d.geom.L||3,Ep=0.01*L+0.02,ql=o.q||1,sA=o.s||1,cR=o.c||0.4,dh=Math.max(0.02,dd);
   /* sección 1: a = 1,5·Ø equivalente desde el centro de los alivios (1,7·Ø − Ep si la desviación es alta) */
   var a1=Math.max(1.5*phi,dh*4)+(na>1?sepA*0.25:0),W=a1*Math.SQRT2,secs=[{n:1,dist:a1,B:a1,W:W,ang:0}],B1=a1;
@@ -90,10 +92,52 @@ function generarCorte(d,cx,cy){var c=d.corte,phi=corteAvance(c.dAliv,c.nAliv).ph
     return {holes:h,B1:B1,B2:0,secciones:1,secs:secs}}
   /* secciones siguientes (Holmberg): B = 0,088·√(W·q·s / (d·c)), práctico B − Ep, máximo 2·W;
      cuadrantes girados 45° hasta que el lado del último supere √L (máximo 4 secciones) */
-  var maxS=c.tipo==='quemadoH'?3:4,lim=Math.sqrt(L);
+  var maxS=c.tipo==='quemado1'?1:c.tipo==='quemadoH'?3:4,lim=Math.sqrt(L);
   while(secs.length<maxS&&W<lim){var Bt=0.088*Math.sqrt(W*ql*sA/(dh*cR)),Bp=Math.max(0.15,Math.min(2*W,Bt)-Ep),dist=W/2+Bp,k=secs.length+1;W=Math.SQRT2*(Bp+W/2);secs.push({n:k,dist:dist,B:Bp,W:W,ang:(k%2===0)?PI/4:0})}
   secs.forEach(function(sc){for(var m=0;m<4;m++){var t=sc.ang+PI/2*m;h.push({x:cx+sc.dist*Math.cos(t),y:cy+sc.dist*Math.sin(t),t:'arranque',g:sc.n<=2?'Arranque':'Ayudas',sec:sc.n})}});
   var ult=secs[secs.length-1];return {holes:h,B1:B1,B2:secs[1]?secs[1].B:0,secciones:secs.length,secs:secs,ult:ult}}
+
+/* cuña en V: ángulo incluido ≥ 60°, fondos separados 0,2 m; una V de ayuda menor si L > 2 m y una tercera si L > 3,2 m.
+   La boca de la V principal no puede pasar del ancho útil: avance limitado a ≈ 0,45–0,5 del ancho (Holmberg; López Jimeno). */
+function cunaV(d){var L=+d.geom.L||2.4,W=+d.geom.W||3,H=+d.geom.H||3,t30=Math.tan(PI/6),nV=L>3.2?3:L>2?2:1,vs=[];
+  for(var k=0;k<nV;k++){var Lk=k===0?(nV===1?L:L*0.5):(k===nV-1?L:L*0.75),x=0.1+Lk*t30;vs.push({L:Lk,x:x,ang:30,B:k?x-vs[k-1].x:x})}
+  vs.sort(function(a,b){return a.x-b.x});var util=W/2-0.45,cabe=vs[vs.length-1].x<=util,Lmax=(util-0.1)/t30;
+  var hc=Math.min(1.6,Math.max(0.9,0.35*H)),filas=Math.max(2,Math.round(hc/0.5)+1);return {vs:vs,filas:filas,dy:hc/(filas-1),cabe:cabe,Lmax:Lmax}}
+function lmaxPhi(phi){return 0.15+34.1*phi-39.4*phi*phi}
+function phiNecesario(L){for(var p=0.02;p<=0.43;p+=0.001)if(lmaxPhi(p)>=L)return p;return null}
+/* comparador de cueles para la sección y profundidad del diseño */
+function variantesCuele(d,cat){var g=d.geom,L=+g.L,out=[],dA=+d.corte.dAliv||64,opc=[];
+  [1,2,3,4].forEach(function(n){opc.push({tipo:'quemado2',n:n,dA:dA})});[102,127,152].forEach(function(D2){if(D2>dA+5)[1,2].forEach(function(n){opc.push({tipo:'quemado2',n:n,dA:D2})})});
+  opc.forEach(function(o){var dd=JSON.parse(JSON.stringify(d));dd.corte.tipo=o.tipo;dd.corte.nAliv=o.n;dd.corte.dAliv=o.dA;var r;try{r=disenar(dd,cat)}catch(e){return}
+    var phi=o.dA/1000*Math.sqrt(o.n),Lm=lmaxPhi(phi),nC=r.holes.filter(function(h){return h.t==='arranque'}).length;
+    out.push({id:'q'+o.n+'x'+o.dA,tipo:'quemado2',nAliv:o.n,dAliv:o.dA,nombre:'Quemado · '+o.n+' alivio'+(o.n>1?'s':'')+' de '+o.dA+' mm',Lmax:Lm,avance:0.95*Math.min(L,Lm),viable:Lm>=L,nCuele:nC,nTotal:r.holes.length,
+      mPerf:r.holes.reduce(function(s,h){return s+(h.t==='alivio'?0:L)},0),mRima:o.n*L,costo:r.costo?r.costo.total:null,fc:r.fc,
+      nota:Lm>=L?'Avance completo con margen de '+Math.round((Lm/L-1)*100)+' %.':'Profundidad mayor que la capacidad del cuele: avance esperado '+(0.95*Lm).toFixed(2)+' m.'})});
+  var V=cunaV(d),dv=JSON.parse(JSON.stringify(d));dv.corte.tipo='cuna';var rv=disenar(dv,cat);
+  out.push({id:'cuna',tipo:'cuna',nAliv:0,dAliv:dA,nombre:'Cuña en V'+(V.vs.length>1?' ('+V.vs.length+' V)':''),Lmax:V.Lmax,avance:0.9*Math.min(L,V.Lmax),viable:V.cabe,nCuele:rv.holes.filter(function(h){return h.t==='arranque'}).length,nTotal:rv.holes.length,
+    mPerf:rv.holes.reduce(function(s,h){return s+(h.t==='alivio'?0:(h.inc?L/Math.cos(PI/6):L))},0),mRima:0,costo:rv.costo?rv.costo.total:null,fc:rv.fc,
+    nota:V.cabe?'Sin alivios; barrenos inclinados a 60°. Exige buen marcado del ángulo.':'La boca de la V no cabe en '+g.W+' m de ancho: profundidad máxima ≈ '+V.Lmax.toFixed(2)+' m.'});
+  var Lab=0.4*g.W;out.push({id:'abanico',tipo:null,nAliv:0,dAliv:dA,nombre:'Abanico (corte en abanico)',Lmax:Lab,avance:0.85*Math.min(L,Lab),viable:Lab>=L,nCuele:null,nTotal:null,mPerf:null,mRima:0,costo:null,fc:null,
+    nota:'Referencia: avance ≈ 0,4 del ancho y fragmentación más gruesa; útil en frentes anchos sin escariador.'});
+  var phiN=phiNecesario(L);
+  var pr=+((d.costos||{}).rima)||6;out.forEach(function(o){var adj=o.dAliv!==dA?pr*o.mRima*(Math.pow(o.dAliv/dA,2)-1):0;if(o.dAliv!==dA&&o.tipo==='quemado2')o.nota+=' Requiere escariador de '+o.dAliv+' mm (rimado más caro).';o.costoAj=o.costo!=null?o.costo+adj:null;o.puntaje=(o.viable?0:1e6)+(o.costoAj!=null?o.costoAj:9e5)});var orden=out.filter(function(o){return o.nTotal!=null}).sort(function(a,b){return a.puntaje-b.puntaje});
+  return {lista:out,mejor:orden[0],phiNec:phiN,dNec1:phiN?phiN*1000:null,dNec2:phiN?phiN/Math.SQRT2*1000:null,dNec4:phiN?phiN/2*1000:null}}
+/* revisión contra la literatura: diseño y, si se ingresan, los datos del estándar del usuario */
+function revisionLit(R,d){var g=d.geom,A=R.A,kr=R.kr,ex=R.prod,rws=(ex.rws||100)/100,rmr=+d.roca.rmr||50,ref=d.ref||{},rows=[];
+  var cl=rmr>=60?{n:'tenaz',dp:0.5,c:2}:rmr>=40?{n:'intermedia',dp:0.6,c:1.5}:{n:'friable',dp:0.7,c:1};
+  var Nlit=R.holes.length,qLit=(14/A+0.8)*kr*kr/0.84,av=R.av,refAv=+ref.av>0?+ref.av:av,vol=A*refAv;
+  function est(v,lo,hi){return v==null||!isFinite(v)?null:(v>=lo&&v<=hi?'ok':(v>=lo*0.85&&v<=hi*1.15?'aviso':'revisar'))}
+  var Lm=R.Lmax;rows.push({k:'cuele',n:'Capacidad del cuele (Holmberg)',dis:R.corte&&R.corte.cuna?R.corte.cuna.Lmax:Lm,ref:null,u:'m',rango:'≥ '+g.L.toFixed(2)+' m de perforación',lo:g.L,hi:99,fuente:'Holmberg (1982): L = 0,15 + 34,1·Ø − 39,4·Ø²'});
+  rows.push({k:'fc',n:'Factor de carga (equivalente ANFO)',dis:R.fc*rws,ref:+ref.kg>0?(+ref.kg*(+ref.rws>0?+ref.rws/100:rws))/vol:null,u:'kg/m³',rango:(qLit*0.75).toFixed(2)+' – '+(qLit*1.35).toFixed(2),lo:qLit*0.75,hi:qLit*1.35,fuente:'Langefors y Kihlström: q = 14/A + 0,8 (dinamita LFB) × Kr², pasado a ANFO con s = 0,84'});
+  rows.push({k:'n',n:'Número de barrenos',dis:R.holes.length,ref:+ref.n>0?+ref.n:null,u:'u',rango:Math.round(Nlit*0.85)+' – '+Math.round(Nlit*1.15),lo:Nlit*0.85,hi:Nlit*1.15,fuente:'Diseño Holmberg calculado por Structiar para estos mismos datos (± 15 %)'});
+  var mDis0=0;var mDis=R.holes.reduce(function(s,h){return s+(h.t==='alivio'?0:g.L)},0)/(A*g.L);
+  rows.push({k:'pe',n:'Perforación específica',dis:mDis,ref:+ref.n>0?(+ref.n*g.L)/(A*g.L):null,u:'m/m³',rango:(mDis*0.85).toFixed(2)+' – '+(mDis*1.15).toFixed(2),lo:mDis*0.85,hi:mDis*1.15,fuente:'Diseño Holmberg de Structiar (± 15 %)'});
+  rows.push({k:'B',n:'Burden de destrozo / sugerido',dis:d.malla.B/R.Bsug,ref:null,u:'×',rango:'0,8 – 1,2',lo:0.8,hi:1.2,fuente:'Holmberg para túneles con base Langefors'});
+  rows.push({k:'EB',n:'Relación espaciamiento / burden',dis:d.malla.E/d.malla.B,ref:null,u:'',rango:'1,0 – 1,3',lo:1.0,hi:1.3,fuente:'Holmberg: S/B 1,1–1,25 en ayudas; 1,0 en zapateras'});
+  var dm=d.malla.d/1000;rows.push({k:'cont',n:'Espaciamiento de contorno',dis:15,ref:+ref.espC>0?+ref.espC/dm:null,u:'× Ø',rango:'12 – 16 Ø (voladura controlada)',lo:12,hi:16,fuente:'Persson, Holmberg y Lundborg: E = 15–16 Ø, B = 1,25·E'});
+  rows.push({k:'taco',n:'Taco',dis:d.malla.taco/dm,ref:null,u:'× Ø',rango:'10 – 20 Ø',lo:10,hi:20,fuente:'Práctica general de túneles'});
+  rows.push({k:'av',n:'Avance por disparo',dis:av,ref:+ref.av>0?+ref.av:null,u:'m',rango:'≥ 0,9 de la perforación',lo:0.9*g.L,hi:g.L,fuente:'Eficiencia esperada 90–95 % con cuele bien dimensionado'});
+  rows.forEach(function(r){r.eDis=est(r.dis,r.lo,r.hi);r.eRef=r.ref==null?null:est(r.ref,r.lo,r.hi)});return {rows:rows,Nlit:Nlit,qLit:qLit,clase:cl}}
 
 /* ---------- diseño completo ---------- */
 function num(v,def,a,b){v=+v;return clamp(isFinite(v)&&v!==0?v:def,a,b)}
@@ -114,7 +158,7 @@ function disenar(d,cat){d=JSON.parse(JSON.stringify(d));var g=d.geom,ml=d.malla,
   // fuera del cuadrante final del cuele y a un burden de contorno del perímetro. Después se cubren huecos sueltos.
   var mInt0=margen+0.85*Bc;holes=holes.filter(function(h){return !(h.t==='arranque'&&h.sec>=3&&(h.y<0.15+0.55*ml.B||!dentro(g,h.x,Math.max(h.y,mInt0),mInt0*0.7)))});
   var aMax=C.holes.reduce(function(mx,h){return Math.max(mx,Math.hypot(h.x-cx,h.y-cy))},0),mInt=margen+0.85*Bc,U=null;(C.secs||[]).forEach(function(sc){if(holes.filter(function(h){return h.t==='arranque'&&h.sec===sc.n}).length===4)U=sc});
-  function enCuele(x,y){if(!U)return Math.hypot(x-cx,y-cy)<aMax+ml.B*0.5;var dx=Math.abs(x-cx),dy=Math.abs(y-cy),e=ml.B*0.55;
+  function enCuele(x,y){if(C.cuna){var Vx=C.cuna.vs[C.cuna.vs.length-1].x;return Math.abs(x-cx)<=Vx+ml.B*0.5&&Math.abs(y-cy)<=C.cuna.dy*(C.cuna.filas-1)/2+ml.B*0.6}if(!U)return Math.hypot(x-cx,y-cy)<aMax+ml.B*0.5;var dx=Math.abs(x-cx),dy=Math.abs(y-cy),e=ml.B*0.55;
     return U.ang===0?(dx+dy)<=U.dist+e*Math.SQRT2:Math.max(dx,dy)<=U.dist/Math.SQRT2+e}
   function libre(x,y,f){return !holes.some(function(h){return Math.hypot(h.x-x,h.y-y)<f})}
   var cols=[];for(var ic=1;ic<nz-1;ic++)cols.push(-(g.W/2-margen)+(g.W-2*margen)*ic/(nz-1));
@@ -128,8 +172,11 @@ function disenar(d,cat){d=JSON.parse(JSON.stringify(d));var g=d.geom,ml=d.malla,
     for(var k3=0;k3<cand.length;k3++){var dq=Math.hypot(cand[k3][0]-px,cand[k3][1]-py);if(dq<md[k3])md[k3]=dq}}
   if(d.sequia==='izq'||d.sequia==='der'){var sx=(d.sequia==='izq'?-1:1)*(g.W/2-margen-0.25);holes.push({x:sx,y:0.15+0.35,t:'sequia',g:'Sequía'})}
   // capas de destrozo por distancia al corte
-  var des=holes.filter(function(h){return h.t==='destrozo'}),corteR=aMax+ml.B*0.5;var rmx=des.reduce(function(m,h){return Math.max(m,h.r)},0),capas=Math.max(1,Math.min(4,Math.ceil((rmx-corteR)/ml.B)+0));
-  des.forEach(function(h){h.capa=Math.max(1,Math.min(capas,1+Math.floor((h.r-corteR)/ml.B)))});
+  // capas de destrozo por propagación de cara libre: sale cuando ya detonó un vecino a menos de 2·max(B,E)
+  var des=holes.filter(function(h){return h.t==='destrozo'}),lim2=2*Math.max(ml.B,ml.E),hechos=holes.filter(function(h){return h.t==='arranque'||h.t==='alivio'}),capas=0,pend=des.slice();
+  while(pend.length&&capas<6){var ya=pend.filter(function(h){return hechos.some(function(o){return Math.hypot(o.x-h.x,o.y-h.y)<=lim2})});if(!ya.length)ya=[pend.reduce(function(m,h){return h.r<m.r?h:m},pend[0])];capas++;
+    ya.forEach(function(h){h.capa=capas});hechos=hechos.concat(ya);pend=pend.filter(function(h){return ya.indexOf(h)<0})}
+  if(pend.length){pend.forEach(function(h){h.capa=capas})}capas=Math.max(1,capas);
   // periodos: corte sec1, sec2, destrozo por capa, tablas, hombros+corona, zapateras, sequía
   var per=1;holes.forEach(function(h){if(h.t==='arranque')h.p=h.sec});per=1+(C.secciones||1);
   for(var cp=1;cp<=capas;cp++){var any=false;des.forEach(function(h){if(h.capa===cp){h.p=per;any=true}});if(any)per++}
@@ -246,7 +293,7 @@ function ajustarVibracion(lect){var pts=(lect||[]).filter(function(s){return s.p
 function eficienciaReal(disparos){var v=(disparos||[]).filter(function(x){return +x.perf>0&&+x.avance>0}).map(function(x){return x.avance/x.perf*100});
   if(!v.length)return null;var m=v.reduce(function(a,b){return a+b})/v.length;return {media:m,n:v.length}}
 
-var API={CATALOGO:CATALOGO,SERIES:SERIES,CORTES:CORTES,defaults:defaults,disenar:disenar,sensibilidad:sensibilidad,comparar:comparar,planCarga:planCarga,
+var API={variantesCuele:variantesCuele,revisionLit:revisionLit,cunaV:cunaV,lmaxPhi:lmaxPhi,phiNecesario:phiNecesario,CATALOGO:CATALOGO,SERIES:SERIES,CORTES:CORTES,defaults:defaults,disenar:disenar,sensibilidad:sensibilidad,comparar:comparar,planCarga:planCarga,
   area:area,dentro:dentro,ppv:ppv,qAdm:qAdm,ajustarVibracion:ajustarVibracion,eficienciaReal:eficienciaReal,corteAvance:corteAvance,cargaLineal:cargaLineal,cartuchoKg:cartuchoKg,kRoca:kRoca};
 if(typeof module!=='undefined'&&module.exports)module.exports=API;else root.SVE=API;
 })(this);

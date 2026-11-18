@@ -68,7 +68,8 @@ summary b{font:700 15px var(--f-d);letter-spacing:.03em}summary small{display:bl
 .hinfo{font:500 12.5px var(--f-m);color:var(--mute);min-height:18px;margin-top:6px}
 .alerts{display:grid;gap:7px}.al{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;padding:8px 10px;border-radius:7px;background:var(--surface2);font-size:13.5px}
 .al .pill{align-self:start}.al small{grid-column:2;color:var(--mute)}
-.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px}table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--surface)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+main,.stack>*,.panel,.g2>*{min-width:0}table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--surface)}
 th{font:600 10.5px var(--f-b);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);text-align:left;padding:7px 10px;background:var(--surface2);border-bottom:1px solid var(--line);white-space:nowrap}
 td{padding:7px 10px;border-bottom:1px solid var(--line2);vertical-align:middle}tr:last-child td{border-bottom:0}td.n,th.n{text-align:right;font-family:var(--f-m);white-space:nowrap}tr.sum td{font-weight:700;border-top:2px solid var(--line)}tr.grp td{background:var(--surface2);font:600 10.5px var(--f-b);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
 td input{min-height:30px;padding:3px 6px;max-width:90px}
@@ -157,7 +158,9 @@ var STEPS=[
   ['num','corte.nAliv','Barrenos de alivio (vacíos)','u',1,0,6,'Cara libre del corte. En quemados son obligatorios.'],['num','corte.dAliv','Diámetro de alivio (rimado)','mm',1,38,152],
   ['num','corte.dx','Desplazamiento lateral del corte','m',0.05,-3,3,'Desde el eje (− izquierda, + derecha). También puedes arrastrarlo en el esquema.'],
   ['num','corte.y','Altura del corte sobre el piso','m',0.05,0.4,8],
-  ['sel','sequia','Barreno de cuneta (sequía)',[['no','Sin sequía'],['izq','Sí, lado izquierdo'],['der','Sí, lado derecho']]]]},
+  ['sel','sequia','Barreno de cuneta (sequía)',[['no','Sin sequía'],['izq','Sí, lado izquierdo'],['der','Sí, lado derecho']]],
+  ['sub','Tu estándar actual (opcional, para auditarlo)'],['num','ref.n','Barrenos totales del estándar','u',1,4,400,'Incluye alivios. Se compara contra la literatura.'],['num','ref.kg','Explosivo total del estándar','kg',1,1,5000],
+  ['num','ref.rws','Potencia relativa del explosivo del estándar','% ANFO',1,50,200,'Vacío = la del explosivo de este diseño.'],['num','ref.av','Avance efectivo del estándar','m',0.05,0.3,8],['num','ref.espC','Espaciamiento de contorno del estándar','m',0.01,0.2,2]]},
  {n:'2',t:'Macizo rocoso y estructuras',sum:function(){return 'RMR '+D.roca.rmr+' · UCS '+D.roca.ucs+' MPa · '+((D.estructuras||[]).length?(D.estructuras.length+' familias'):'sin estructuras')+(+D.roca.c>0?' · c '+D.roca.c:'')},k:['fc','dano','frag','estr'],f:[
   ['num','roca.rmr','RMR (Bieniawski)','',1,10,95,'Clase I > 80 · II 61–80 · III 41–60 · IV 21–40 · V < 20.'],['num','roca.ucs','Resistencia a compresión (UCS)','MPa',5,5,300],
   ['sel','roca.estructura','Estructura',[['masiva','Masiva / juntas apretadas'],['moderada','Moderadamente fracturada'],['fracturada','Fracturada'],['muy','Muy fracturada / con fallas']]],
@@ -266,6 +269,24 @@ function lineChart(o){var W=520,H=220,pl=46,pr=12,pt=12,pb=34,xs=o.xs,ys=o.ys;va
   return s+'</svg>'}
 
 /* ---------- vistas ---------- */
+function pillE(e){return e?'<span class="pill '+(e==='ok'?'ok':e==='aviso'?'aviso':'error')+'">'+(e==='ok'?'en rango':e==='aviso'?'al límite':'fuera')+'</span>':'<span class="mute">—</span>'}
+var VC={key:'',V:null,t:null};
+function panelVariantes(){var sd=sanear(D),key=JSON.stringify([sd.geom,sd.malla,sd.corte,sd.roca,sd.exp,sd.costos]);
+  if(VC.key===key&&VC.V)return '<div id="pVar">'+htmlVariantes(VC.V)+'</div>';
+  clearTimeout(VC.t);VC.t=setTimeout(function(){try{VC.V=E.variantesCuele(sanear(D),S.cat);VC.key=key}catch(e){return}var el=document.getElementById('pVar');if(el)el.innerHTML=htmlVariantes(VC.V)},500);
+  return '<div id="pVar">'+(VC.V?htmlVariantes(VC.V):'<div class="panel"><div class="ph"><h3>Variantes de cuele</h3></div><p class="note">Calculando variantes…</p></div>')+'</div>'}
+function htmlVariantes(V){
+  var rows=V.lista.slice().sort(function(a,b){return a.puntaje-b.puntaje}).map(function(o){var es=(o.tipo==='cuna'&&D.corte.tipo==='cuna')||(o.tipo===D.corte.tipo&&o.nAliv===+D.corte.nAliv&&o.dAliv===+D.corte.dAliv);
+    return '<tr'+(es?' style="background:var(--accent-soft)"':'')+'><td>'+esc(o.nombre)+(o===V.mejor?' <span class="pill ok">recomendado</span>':'')+(es?' <span class="pill n">actual</span>':'')+'<div class="mute" style="font-size:11.5px">'+esc(o.nota)+'</div></td><td class="n">'+f2(o.Lmax)+'</td><td class="n">'+(o.viable?'<span class="pill ok">sí</span>':'<span class="pill error">no</span>')+'</td><td class="n">'+f2(o.avance)+'</td><td class="n">'+(o.nTotal!=null?o.nTotal:'—')+'</td><td class="n">'+(o.mRima?f1(o.mRima):'—')+'</td><td class="n">'+(o.costoAj!=null?f0(o.costoAj):'—')+'</td><td>'+(o.nTotal!=null&&!es?'<button class="btn g sm" data-a="cuele" data-id="'+o.id+'">Aplicar</button>':'')+'</td></tr>'}).join('');
+  return '<div class="panel"><div class="ph"><h3>Variantes de cuele</h3><small class="mute">para '+f2(D.geom.L)+' m de perforación en '+f1(D.geom.W)+'×'+f1(D.geom.H)+' m</small></div>'+
+   '<p class="note" style="margin-top:0">Alivio equivalente necesario para '+f2(D.geom.L)+' m (Holmberg): Ø '+(V.phiNec?f0(V.phiNec*1000)+' mm → 1 alivio de '+f0(V.dNec1)+' mm, 2 de '+f0(V.dNec2)+' mm o 4 de '+f0(V.dNec4)+' mm':'fuera de rango')+'. Se recomienda ≥ 10 % de margen por desviación.</p>'+
+   '<div class="tbl"><table><thead><tr><th>Cuele</th><th class="n">Avance máx. m</th><th class="n">Viable</th><th class="n">Avance esperado m</th><th class="n">Barrenos</th><th class="n">Rimado m</th><th class="n">Costo USD</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+   '<p class="note">Quemado: Holmberg (1982). Cuña en V: ángulo ≥ 60° y avance limitado a ≈ 0,45–0,5 del ancho (Holmberg; López Jimeno). Abanico solo como referencia. El costo incluye perforación, rimado (ajustado al diámetro del escariador), explosivo, accesorios y mano de obra con tus precios.</p></div>'}
+function panelRevision(){var V;try{V=E.revisionLit(R,sanear(D))}catch(e){return ''}var hayRef=V.rows.some(function(r){return r.ref!=null});
+  function fv(r,v){return v==null?'—':(r.u==='u'?f0(v):f2(v))+(r.u&&r.u!=='u'?' '+r.u:'')}
+  return '<div class="panel"><div class="ph"><h3>Revisión contra la literatura</h3><small class="mute">'+(hayRef?'diseño y tu estándar':'ingresa tu estándar en el paso 1 para auditarlo')+'</small></div><div class="tbl"><table><thead><tr><th>Criterio</th><th class="n">Diseño</th><th></th>'+(hayRef?'<th class="n">Tu estándar</th><th></th>':'')+'<th>Rango de referencia</th></tr></thead><tbody>'+
+   V.rows.map(function(r){return '<tr><td>'+esc(r.n)+'<div class="mute" style="font-size:11.5px">'+esc(r.fuente)+'</div></td><td class="n">'+fv(r,r.dis)+'</td><td>'+pillE(r.eDis)+'</td>'+(hayRef?'<td class="n">'+fv(r,r.ref)+'</td><td>'+(r.ref!=null?pillE(r.eRef):'')+'</td>':'')+'<td>'+esc(String(r.rango).replace(/(\d)\.(\d)/g,'$1,$2'))+'</td></tr>'}).join('')+'</tbody></table></div>'+
+   '<p class="note">Los rangos son referencias de literatura para comparar, no límites absolutos: calibra con los resultados reales de tu mina (pestaña Real).</p></div>'}
 function vDiseno(){var g=D.geom,est=R.estado==='conforme'?'ok':R.estado==='revisar'?'error':'aviso',nok=R.alertas.length-R.nAvisos;
   var h='<div class="panel estado '+est+'"><span class="dot '+est+'"></span><h3>'+(R.estado==='conforme'?'Diseño conforme':R.estado==='revisar'?'Revisar diseño':'Ajuste menor')+'</h3>'+(R.nAvisos?'<span class="pill '+est+'">'+R.nAvisos+' a revisar</span>':'')+'<span class="pill ok">'+nok+' en rango</span><span class="r mute" style="margin-left:auto;font-size:12.5px">'+(S.id?'Guardado en la mina':'Sin guardar')+'</span></div>';
   h+='<div class="kpis"><div class="kpi a"><div class="l">Toneladas por disparo</div><div class="v">'+f0(R.ton)+'<small>t</small></div><div class="s">'+f1(R.vol)+' m³ · avance '+f2(R.av)+' m</div></div>'+
@@ -300,6 +321,7 @@ function vDiseno(){var g=D.geom,est=R.estado==='conforme'?'ok':R.estado==='revis
    (R.ppvc?'<div class="tbl" style="margin-top:8px"><table><thead><tr><th>Zona (McKenzie)</th><th class="n">PPV</th><th class="n">mm/s</th></tr></thead><tbody>'+R.ppvc.zonas.map(function(z){return '<tr><td>'+esc(z.n)+'</td><td class="n">'+(z.f===0.25?'¼':z.f)+'·PPVc</td><td class="n">'+f0(z.v)+'</td></tr>'}).join('')+'</tbody></table></div>':'')+'</div>'+
    '<div class="panel"><div class="ph"><h3>Energía por zona</h3></div>'+zs.map(function(z){var pc=z[1].kg/R.kg*100;return '<div style="display:grid;grid-template-columns:110px 1fr 120px;gap:8px;align-items:center;margin:5px 0;font-size:13px"><span>'+esc(z[0])+'</span><span class="bar"><i style="width:'+pc.toFixed(1)+'%"></i></span><span class="mono" style="text-align:right">'+f1(z[1].kg)+' kg · '+f0(pc)+' %</span></div>'}).join('')+
    '<div class="grid6" style="margin-top:10px"><div><div class="l">Volumen suelto</div><div class="v">'+f0(R.rezaga.suelto)+' m³</div></div><div><div class="l">Cucharones de 6 t</div><div class="v">'+R.rezaga.cuch+'</div></div><div><div class="l">Energía</div><div class="v">'+f0(R.energia)+' MJ</div></div></div></div></div>';
+  h+=panelVariantes()+panelRevision();
   h+='<div class="panel"><div class="ph"><h3>Cómo se calculó</h3></div><div style="font-size:13px;display:grid;gap:5px">'+
    '<div>Sección '+(g.forma==='rect'?'rectangular':'en herradura')+' de '+f2(g.W)+' × '+f2(g.H)+' m → área '+f2(R.A)+' m². Avance '+f2(g.L)+' m × '+g.eff+' % = '+f2(R.av)+' m → '+f1(R.vol)+' m³ × '+f2(D.roca.dens)+' t/m³ = '+f0(R.ton)+' t.</div>'+
    '<div>Carga lineal q = π/4·(Ø·acopl.)²·ρ = π/4·('+D.malla.d+' mm·'+D.malla.acopl+')²·'+f2(R.prod.rho)+' = '+f2(R.q)+' kg/m.</div>'+
@@ -578,6 +600,7 @@ document.addEventListener('click',function(e){var tp=e.target.closest('[data-tip
   if(act==='addEst'){D.estaciones=D.estaciones||[];var es=D.estaciones,last=es[es.length-1];es.push(last?{x:Math.min(D.bloque.largo,(+last.x||0)+10),w:last.w,dip:last.dip,off:last.off||0,ley:last.ley}:{x:0,w:D.veta.w,dip:D.veta.dip,off:D.veta.off||0,ley:D.bloque.ley});if(es.length===1)es.push({x:D.bloque.largo,w:D.veta.w,dip:D.veta.dip,off:D.veta.off||0,ley:D.bloque.ley});renderSteps();changed(true);return}
   if(act==='delEst'){D.estaciones.splice(+a.dataset.i,1);renderSteps();changed(true);return}
   if(act==='ring'){S.ringSel=a.dataset.i===''?null:+a.dataset.i;stopSim();S.sim=null;vDisenoLH();return}
+  if(act==='cuele'){var V2=E.variantesCuele(sanear(D),S.cat),o=V2.lista.filter(function(x){return x.id===a.dataset.id})[0];if(o&&o.tipo){D.corte.tipo=o.tipo;if(o.tipo!=='cuna'){D.corte.nAliv=o.nAliv;D.corte.dAliv=o.dAliv}renderSteps();changed(true);toast('Cuele aplicado: '+o.nombre)}return}
   if(act==='bsug'&&LHm()){D.perf.B=Math.round(R.Bsug*20)/20;D.perf.E=Math.round(D.perf.B*1.2*20)/20;changed(true);toast('Burden '+f2(D.perf.B)+' m y espaciamiento al fondo '+f2(D.perf.E)+' m');return}
   if(act==='bsug'){D.malla.B=Math.round(R.Bsug*20)/20;D.malla.E=Math.round(D.malla.B*1.15*20)/20;changed(true);toast('Burden '+f2(D.malla.B)+' m y espaciamiento '+f2(D.malla.E)+' m')}
   else if(act==='sim'){simToggle()}else if(act==='simreset'){stopSim();S.sim=null;(LHm()?vDisenoLH:vDiseno)()}
