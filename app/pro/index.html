@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Structiar · Voladura Pro</title>
+<meta name="theme-color" content="#0E2233"><link rel="icon" href="../icons/favicon.png"><link rel="manifest" href="../manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+:root{--bg:#EEF2F4;--surface:#fff;--surface2:#F5F8F9;--ink:#0F1E2B;--mute:#5A6B78;--line:#D5DEE3;--line2:#E6ECEF;--band:#0E2233;--band-ink:#EAF2F6;--band-mute:#93A9B8;
+--accent:#0E8C86;--accent-ink:#fff;--accent-soft:#DDF2F0;--warm:#C26A1C;--warm-soft:#FBEBDD;--ok:#257A48;--ok-bg:#E0F1E6;--warn:#8F5A00;--warn-bg:#FAEED6;--bad:#AE3527;--bad-bg:#F7E1DD;
+--c-arr:#E07B22;--c-ayu:#D9A21B;--c-des:#16A09A;--c-con:#2F6FD6;--c-zap:#8A4FD1;--c-ali:#ffffff;--c-seq:#7A8794;--rock:#5B4A3A;--rock2:#3E3328;
+--f-d:"IBM Plex Sans Condensed","Arial Narrow",sans-serif;--f-b:"IBM Plex Sans","Segoe UI",Arial,sans-serif;--f-m:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0B141B;--surface:#122029;--surface2:#172833;--ink:#E3EDF2;--mute:#93A7B4;--line:#24384A;--line2:#1C2E3B;--band:#060D12;
+--accent:#3CC2BA;--accent-ink:#04201E;--accent-soft:#103633;--warm:#E8964F;--warm-soft:#3A2614;--ok:#5EC48C;--ok-bg:#10301D;--warn:#E3A63B;--warn-bg:#35280C;--bad:#F2826F;--bad-bg:#3A1814;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0B141B;--surface:#122029;--surface2:#172833;--ink:#E3EDF2;--mute:#93A7B4;--line:#24384A;--line2:#1C2E3B;--band:#060D12;--accent:#3CC2BA;--accent-ink:#04201E;--accent-soft:#103633;--warm:#E8964F;--warm-soft:#3A2614;--ok:#5EC48C;--ok-bg:#10301D;--warn:#E3A63B;--warn-bg:#35280C;--bad:#F2826F;--bad-bg:#3A1814;color-scheme:dark}
+*{box-sizing:border-box}html,body{background:var(--bg)}body{margin:0;color:var(--ink);font:14.5px/1.45 var(--f-b)}
+h1,h2,h3{font-family:var(--f-d);margin:0}button,input,select{font:inherit;color:inherit}
+.mono{font-family:var(--f-m);font-variant-numeric:tabular-nums}.mute{color:var(--mute)}
+header{background:var(--band);color:var(--band-ink);position:sticky;top:0;z-index:30;padding:max(10px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left))}
+.hrow{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;max-width:1500px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}.brand img{width:34px;height:34px;border-radius:8px;background:#fff}
+.brand b{font:700 18px/1 var(--f-d);letter-spacing:.06em}.brand b i{font-style:normal;color:#35C6BE}.brand small{display:block;font:500 11px var(--f-b);color:var(--band-mute);letter-spacing:.08em;text-transform:uppercase;margin-top:3px}
+.hact{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:6px;padding:7px 13px;font-weight:600;cursor:pointer;min-height:38px;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.btn.g{background:transparent;color:inherit;border-color:var(--line)}header .btn.g{border-color:#ffffff38}.btn.sm{min-height:30px;padding:3px 10px;font-size:13px}.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.w{background:var(--warm);border-color:var(--warm);color:#fff}
+.save{font-size:12.5px;color:var(--band-mute)}
+.wrap{max-width:1500px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-right)) 60px max(16px,env(safe-area-inset-left));display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+@media(min-width:1100px){.wrap{grid-template-columns:380px minmax(0,1fr);align-items:start}aside.side{position:sticky;top:76px;max-height:calc(100vh - 92px);overflow:auto}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.banner{padding:10px 14px;border-radius:8px;font-size:13.5px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}.banner.warn{background:var(--warn-bg);color:var(--warn)}.banner.bad{background:var(--bad-bg);color:var(--bad)}.banner.info{background:var(--accent-soft)}
+.meta{display:grid;grid-template-columns:1fr 1fr;gap:8px}.meta .full{grid-column:1/-1}
+label.f{display:grid;gap:3px;font:600 11.5px var(--f-b);color:var(--mute);text-transform:uppercase;letter-spacing:.05em}
+input,select{background:var(--surface2);border:1px solid var(--line);border-radius:6px;padding:7px 9px;min-height:36px;width:100%;text-transform:none;letter-spacing:0;font-weight:500}
+input[type=number]{font-family:var(--f-m)}
+details.step{border:1px solid var(--line);border-radius:10px;background:var(--surface);margin-top:10px}
+details.step>summary{list-style:none;cursor:pointer;padding:11px 14px;display:grid;grid-template-columns:28px 1fr auto;gap:10px;align-items:center}
+details.step>summary::-webkit-details-marker{display:none}
+.num{width:26px;height:26px;border-radius:6px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font:700 13px var(--f-d)}
+details.step[open] .num{background:var(--accent);color:var(--accent-ink)}
+summary b{font:700 15px var(--f-d);letter-spacing:.03em}summary small{display:block;font:500 11.5px var(--f-m);color:var(--mute)}
+.dot{width:9px;height:9px;border-radius:50%}.dot.ok{background:var(--ok)}.dot.aviso{background:var(--warn)}.dot.error{background:var(--bad)}
+.fields{padding:2px 14px 14px;display:grid;gap:10px}
+.fl{display:grid;grid-template-columns:minmax(0,1fr) 108px;gap:4px 10px;align-items:center}
+.fl>span{font-size:13px}.fl>span em{display:block;font-style:normal;font-size:11.5px;color:var(--mute)}
+.fl .u{position:relative}.fl .u input{padding-right:34px;text-align:right}.fl .u i{position:absolute;right:8px;top:50%;transform:translateY(-50%);font:500 11px var(--f-m);color:var(--mute);font-style:normal}
+.fl .sug{grid-column:1/-1;font-size:12px;color:var(--mute);display:flex;gap:8px;align-items:center}
+.sub{font:700 11px var(--f-b);letter-spacing:.12em;text-transform:uppercase;color:var(--warm);margin-top:6px}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px 9px;font:700 13.5px var(--f-d);letter-spacing:.06em;text-transform:uppercase;color:var(--mute);cursor:pointer;white-space:nowrap}
+.tabs button.on{color:var(--ink);border-bottom-color:var(--accent)}
+.stack{display:grid;gap:14px;margin-top:14px}
+.estado{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 16px;border-left:4px solid var(--ok)}.estado.aviso{border-left-color:var(--warn)}.estado.error{border-left-color:var(--bad)}
+.estado h3{font-size:16px;letter-spacing:.06em;text-transform:uppercase}.pill{display:inline-block;padding:1px 9px;border-radius:999px;font:600 12px var(--f-m);white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--ok)}.pill.aviso{background:var(--warn-bg);color:var(--warn)}.pill.error{background:var(--bad-bg);color:var(--bad)}.pill.n{border:1px solid var(--line);color:var(--mute)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:11px 14px;border-top:3px solid var(--line)}.kpi.a{border-top-color:var(--warm)}.kpi.b{border-top-color:var(--accent)}
+.kpi .l{font:600 10.5px var(--f-b);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}.kpi .v{font:700 27px/1.15 var(--f-d);font-variant-numeric:tabular-nums}.kpi .v small{font:500 13px var(--f-b);color:var(--mute);margin-left:3px}.kpi .s{font:500 11.5px var(--f-m);color:var(--mute)}
+.grid6{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,130px),1fr));border:1px solid var(--line);border-radius:10px;background:var(--surface);overflow:hidden}
+.grid6>div{padding:9px 12px;border-right:1px solid var(--line2);border-bottom:1px solid var(--line2)}.grid6 .l{font:600 10px var(--f-b);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}.grid6 .v{font:600 15px var(--f-m)}
+.ph{display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.ph h3{font-size:15px;letter-spacing:.06em;text-transform:uppercase}.ph .r{margin-left:auto}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:7px;overflow:hidden}.seg button{border:0;background:var(--surface);padding:6px 11px;font:600 12px var(--f-m);cursor:pointer;color:var(--mute)}.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.scheme{background:#1b1712;border-radius:10px;position:relative;overflow:hidden}
+.scheme svg{display:block;width:100%;height:auto;max-height:68vh;touch-action:none}
+.legend{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:12.5px;color:var(--mute);margin-top:8px}.legend i{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.player{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}.player .t{font:600 13px var(--f-m);min-width:70px}
+.hinfo{font:500 12.5px var(--f-m);color:var(--mute);min-height:18px;margin-top:6px}
+.alerts{display:grid;gap:7px}.al{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;padding:8px 10px;border-radius:7px;background:var(--surface2);font-size:13.5px}
+.al .pill{align-self:start}.al small{grid-column:2;color:var(--mute)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px}table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--surface)}
+th{font:600 10.5px var(--f-b);letter-spacing:.08em;text-transform:uppercase;color:var(--mute);text-align:left;padding:7px 10px;background:var(--surface2);border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--line2);vertical-align:middle}tr:last-child td{border-bottom:0}td.n,th.n{text-align:right;font-family:var(--f-m);white-space:nowrap}tr.sum td{font-weight:700;border-top:2px solid var(--line)}tr.grp td{background:var(--surface2);font:600 10.5px var(--f-b);letter-spacing:.1em;text-transform:uppercase;color:var(--mute)}
+td input{min-height:30px;padding:3px 6px;max-width:90px}
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px}
+.chart svg{width:100%;height:auto;display:block}
+.bar{height:7px;border-radius:4px;background:var(--line2);overflow:hidden}.bar i{display:block;height:100%;background:var(--warm)}
+.note{font-size:12.5px;color:var(--mute);margin:8px 0 0}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:10px}
+.card{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--surface);display:grid;gap:6px}.card b{font:700 15px var(--f-d)}.card p{margin:0;font-size:13px;color:var(--mute)}
+.empty{padding:18px;text-align:center;color:var(--mute);border:1px dashed var(--line);border-radius:8px}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--band);color:var(--band-ink);padding:10px 16px;border-radius:8px;z-index:90;max-width:calc(100vw - 32px)}
+.gate{max-width:520px;margin:12vh auto;text-align:center}
+[hidden]{display:none!important}
+@media print{header,aside.side,.tabs,.noprint{display:none!important}.wrap{display:block}body{background:#fff}}
+</style></head><body>
+<header><div class="hrow">
+  <a class="brand" href="../" title="Volver a Structiar Mina"><img src="../icons/icon-192.png" alt=""><span><b>STRUCT<i>IAR</i></b><small>Voladura Pro · diseño y QA/QC</small></span></a>
+  <span class="save" id="saveSt"></span>
+  <div class="hact"><button class="btn g sm" data-a="nuevo">Nuevo</button><button class="btn g sm" data-a="duplicar">Duplicar</button><button class="btn w" data-a="guardar" id="bGuardar">Guardar</button><button class="btn g sm" data-a="pdf">Reporte PDF</button><button class="btn g sm" data-a="csv">Excel</button></div>
+</div></header>
+<div id="gate" class="gate" hidden></div>
+<div class="wrap" id="app" hidden>
+  <aside class="side">
+    <div id="ban"></div>
+    <div class="panel"><div class="meta">
+      <label class="f full">Nombre del diseño<input id="mNombre" placeholder="Ej.: Galería 3×3 · roca regular"></label>
+      <label class="f">Frente<select id="mFrente"></select></label>
+      <label class="f">Responsable<input id="mResp" placeholder="Nombre"></label>
+    </div></div>
+    <div id="steps"></div>
+    <div class="noprint" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn g sm" data-a="reset">Restablecer valores</button></div>
+  </aside>
+  <main>
+    <nav class="tabs" id="tabs"><button data-t="diseno" class="on">Diseño</button><button data-t="carga">Carga y costos</button><button data-t="real">Real y calibración</button><button data-t="biblio">Biblioteca</button></nav>
+    <section id="t-diseno" class="stack"></section>
+    <section id="t-carga" class="stack" hidden></section>
+    <section id="t-real" class="stack" hidden></section>
+    <section id="t-biblio" class="stack" hidden></section>
+  </main>
+</div>
+<div class="toast" id="toast" hidden></div>
+<script src="../vendor/supabase-2.45.4.js"></script>
+<script src="config.js"></script>
+<script src="engine.js"></script>
+<script>
+(function(){'use strict';
+var E=window.SVE,C=window.STRUCTIAR_CFG||{},sb=null;try{sb=supabase.createClient(C.url,C.key,{auth:{persistSession:true,autoRefreshToken:true}})}catch(e){}
+function $(s){return document.querySelector(s)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function fx(n,d){n=+n;if(!isFinite(n))return '—';return n.toLocaleString('es-EC',{minimumFractionDigits:d,maximumFractionDigits:d})}
+function f0(n){return fx(n,0)}function f1(n){return fx(n,1)}function f2(n){return fx(n,2)}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+var tt;function toast(m){var t=$('#toast');t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(function(){t.hidden=true},3400)}
+function get(o,p){return p.split('.').reduce(function(a,k){return a==null?a:a[k]},o)}
+function set(o,p,v){var ks=p.split('.'),l=ks.pop(),t=ks.reduce(function(a,k){return a[k]=a[k]||{}},o);t[l]=v}
+
+/* ---------- estado ---------- */
+var S={uid:null,mina:null,rol:null,pro:false,frentes:{},disparos:[],disenos:{},sismos:{},cat:E.CATALOGO.slice(),id:null,dirty:false,tab:'diseno',modo:'tipo',sel:null,sim:null};
+var D=E.defaults(),R=null;
+try{var ls=JSON.parse(localStorage.getItem('svp-borrador'));if(ls&&ls.geom)D=Object.assign(E.defaults(),ls)}catch(e){}
+function calc(){R=E.disenar(D,S.cat)}
+
+/* ---------- pasos (formulario) ---------- */
+var STEPS=[
+ {n:'1',t:'Labor y arranque',sum:function(){return f1(D.geom.W)+'×'+f1(D.geom.H)+' m · '+f2(D.geom.L)+' m · Ø'+D.malla.d+' mm · '+(E.CORTES[D.corte.tipo]||'').split(' (')[0].toLowerCase()},k:['B','E','taco','corte','eff'],f:[
+  ['sub','Geometría'],['sel','geom.forma','Forma de la sección',[['herradura','Herradura (bóveda)'],['rect','Rectangular']]],
+  ['num','geom.W','Ancho','m',0.1,1.2,12],['num','geom.H','Alto','m',0.1,1.2,12],['num','geom.L','Profundidad de perforación','m',0.1,0.6,6,'Largo del barreno: barra de 4, 6, 8, 12 o 14 pies.'],
+  ['num','geom.eff','Eficiencia de avance esperada','%',1,50,100,'Usa la eficiencia real medida en la pestaña Real.'],
+  ['sub','Malla'],['num','malla.d','Diámetro de barreno','mm',1,25,64],['num','malla.B','Burden','m',0.05,0.3,2,null,'bsug'],['num','malla.E','Espaciamiento','m',0.05,0.3,2.4],['num','malla.taco','Taco','m',0.05,0.1,1.5],['num','malla.zapTaco','Taco en zapateras','m',0.05,0,1],
+  ['sub','Arranque (corte)'],['sel','corte.tipo','Tipo de corte',Object.keys(E.CORTES).map(function(k){return [k,E.CORTES[k]]})],
+  ['num','corte.nAliv','Barrenos de alivio (vacíos)','u',1,0,6,'Cara libre del corte. En quemados son obligatorios.'],['num','corte.dAliv','Diámetro de alivio (rimado)','mm',1,38,152],
+  ['num','corte.dx','Desplazamiento lateral del corte','m',0.05,-3,3,'Desde el eje (− izquierda, + derecha). También puedes arrastrarlo en el esquema.'],
+  ['num','corte.y','Altura del corte sobre el piso','m',0.05,0.4,8],
+  ['sel','sequia','Barreno de cuneta (sequía)',[['no','Sin sequía'],['izq','Sí, lado izquierdo'],['der','Sí, lado derecho']]]]},
+ {n:'2',t:'Macizo rocoso',sum:function(){return 'RMR '+D.roca.rmr+' · UCS '+D.roca.ucs+' MPa · '+D.roca.agua},k:['fc','dano','frag'],f:[
+  ['num','roca.rmr','RMR (Bieniawski)','',1,10,95,'Clase I > 80 · II 61–80 · III 41–60 · IV 21–40 · V < 20.'],['num','roca.ucs','Resistencia a compresión (UCS)','MPa',5,5,300],
+  ['sel','roca.estructura','Estructura',[['masiva','Masiva / juntas apretadas'],['moderada','Moderadamente fracturada'],['fracturada','Fracturada'],['muy','Muy fracturada / con fallas']]],
+  ['num','roca.dens','Densidad de la roca','t/m³',0.05,1.8,4.5],['sel','roca.agua','Condición de agua',[['seco','Seco'],['humedo','Húmedo / goteo'],['inundado','Barrenos con agua']]]]},
+ {n:'3',t:'Explosivo y carga',sum:function(){var p=R&&R.prod;return (p?p.nombre:'')+' · contorno '+D.malla.contornoPct+' %'},k:['fc'],f:[
+  ['exp'],['num','malla.acopl','Acoplamiento (Ø carga / Ø barreno)','',0.05,0.5,1,'Cartucho sin atacar ≈ 0,8–0,85; atacado o granel ≈ 0,95–1.'],['num','malla.contornoPct','Carga de contorno','%',5,10,100,'Porcentaje de la columna normal en tablas y corona (voladura controlada).']]},
+ {n:'4',t:'Tiempos y secuencia',sum:function(){return (E.SERIES[D.tiempos.serie]||{}).nombre||''},k:['sec'],f:[
+  ['sel','tiempos.serie','Serie de retardos',Object.keys(E.SERIES).map(function(k){return [k,E.SERIES[k].nombre]})],['num','tiempos.disp','Dispersión de los detonadores','± %',0.5,0,10,'Pirotécnicos ≈ 3 %; electrónicos ≈ 0,1 %.']]},
+ {n:'5',t:'Vibración',sum:function(){return f0(D.vibr.lim)+' mm/s a '+f0(D.vibr.dist)+' m · K '+f0(D.vibr.K)+' β '+f2(D.vibr.beta)},k:['vib'],f:[
+  ['num','vibr.dist','Distancia a la estructura a proteger','m',1,5,1000],['num','vibr.lim','Límite de PPV','mm/s',1,2,500],['num','vibr.K','Constante K del sitio','',10,50,5000,'Genérica hasta calibrar con sismógrafo (pestaña Real).'],['num','vibr.beta','Exponente β','',0.05,0.8,2.5]]},
+ {n:'6',t:'Precios',sum:function(){return 'USD '+f2(D.costos.perf)+'/m perf · det '+f2(D.costos.det)},k:[],f:[
+  ['num','costos.perf','Perforación','USD/m',0.1,0,50],['num','costos.rima','Rimado de alivios','USD/m',0.1,0,80],['num','costos.det','Detonador no eléctrico','USD/u',0.1,0,40],['num','costos.booster','Booster / cebo','USD/u',0.1,0,40],
+  ['num','costos.linea','Línea de inicio','USD/disparo',1,0,200],['num','costos.manoMin','Carguío y amarre','min/barreno',0.5,0,30],['num','costos.manoHH','Costo de mano de obra','USD/h-h',0.5,0,80]]}];
+function stepState(st){if(!R)return 'ok';var a=R.alertas.filter(function(x){return st.k.indexOf(x.k)>=0});return a.some(function(x){return x.nivel==='error'})?'error':a.some(function(x){return x.nivel==='aviso'})?'aviso':'ok'}
+var openSteps={'1':true};
+function renderSteps(){var h=STEPS.map(function(st){return '<details class="step" data-s="'+st.n+'"'+(openSteps[st.n]?' open':'')+'><summary><span class="num">'+st.n+'</span><span><b>'+esc(st.t.toUpperCase())+'</b><small data-sum="'+st.n+'"></small></span><span class="dot '+stepState(st)+'" data-dot="'+st.n+'"></span></summary><div class="fields">'+
+  st.f.map(function(f){if(f[0]==='sub')return '<div class="sub">'+esc(f[1])+'</div>';
+    if(f[0]==='sel')return '<div class="fl"><span>'+esc(f[2])+'</span><select data-p="'+f[1]+'">'+f[3].map(function(o){return '<option value="'+esc(o[0])+'">'+esc(o[1])+'</option>'}).join('')+'</select></div>';
+    if(f[0]==='exp')return '<div class="fl" style="grid-template-columns:1fr"><span>Explosivo de columna</span><select data-p="exp.id">'+S.cat.map(function(p){return '<option value="'+esc(p.id)+'">'+esc(p.nombre)+' · ρ '+f2(p.rho)+' · RWS '+p.rws+'</option>'}).join('')+'</select></div>';
+    return '<div class="fl"><span>'+esc(f[2])+(f[7]?'<em>'+esc(f[7])+'</em>':'')+'</span><span class="u"><input type="number" data-p="'+f[1]+'" step="'+f[4]+'" min="'+f[5]+'" max="'+f[6]+'"><i>'+esc(f[3])+'</i></span>'+(f[8]==='bsug'?'<div class="sug" id="bsug"></div>':'')+'</div>'}).join('')+'</div></details>'}).join('');
+  $('#steps').innerHTML=h;fillInputs()}
+function fillInputs(){document.querySelectorAll('[data-p]').forEach(function(el){if(document.activeElement===el)return;var v=get(D,el.dataset.p);if(el.dataset.p==='corte.y'&&v==null&&R)v=Math.round(R.cy*100)/100;el.value=v==null?'':v});
+  $('#mNombre').value=D.nombre||'';$('#mResp').value=D.responsable||'';
+  var fr=Object.keys(S.frentes).map(function(k){return S.frentes[k]}).sort(function(a,b){return String(a.nombre).localeCompare(b.nombre)});
+  $('#mFrente').innerHTML='<option value="">Sin frente</option>'+fr.map(function(f){return '<option value="'+esc(f.id)+'"'+(D.frente===f.id?' selected':'')+'>'+esc(f.nombre)+'</option>'}).join('')}
+function updSummaries(){STEPS.forEach(function(st){var s=document.querySelector('[data-sum="'+st.n+'"]');if(s)s.textContent=st.sum();var d=document.querySelector('[data-dot="'+st.n+'"]');if(d)d.className='dot '+stepState(st)});
+  var b=$('#bsug');if(b&&R)b.innerHTML='Sugerido '+f2(R.Bsug)+' m (Langefors × roca '+f2(R.kr)+') <button class="btn g sm" type="button" data-a="bsug">Aplicar</button>'}
+
+/* ---------- esquema SVG ---------- */
+var COL={arranque:'var(--c-arr)',destrozo:'var(--c-des)',contorno:'var(--c-con)',zapatera:'var(--c-zap)',alivio:'var(--c-ali)',sequia:'var(--c-seq)'};
+var PCOL=['#E07B22','#F0A33A','#D9C21B','#7FC241','#16A09A','#2F9BD6','#2F6FD6','#6A5ACD','#8A4FD1','#C04FB0','#D9476A','#9AA4AB'];
+function perfilPath(g,sx,sy){var r=g.W/2;if(g.forma==='rect')return 'M'+sx(-r)+' '+sy(0)+'L'+sx(-r)+' '+sy(g.H)+'L'+sx(r)+' '+sy(g.H)+'L'+sx(r)+' '+sy(0)+'Z';
+  var h=Math.max(0,g.H-r);return 'M'+sx(-r)+' '+sy(0)+'L'+sx(-r)+' '+sy(h)+'A'+(sx(r)-sx(0))+' '+(sx(r)-sx(0))+' 0 0 1 '+sx(r)+' '+sy(h)+'L'+sx(r)+' '+sy(0)+'Z'}
+function scheme(t){var g=D.geom,pad=0.6,Wv=g.W+2*pad,Hv=g.H+2*pad,k=100,sx=function(x){return (x+g.W/2+pad)*k},sy=function(y){return (g.H+pad-y)*k},rad=Math.max(5,D.malla.d/1000*k*1.4);
+  var maxKg=R.holes.reduce(function(m,h){return Math.max(m,h.kg||0)},0.01);
+  var s='<svg viewBox="0 0 '+(Wv*k)+' '+(Hv*k)+'" id="svgS" role="img" aria-label="Esquema de perforación"><defs><pattern id="rk" width="14" height="14" patternUnits="userSpaceOnUse"><rect width="14" height="14" fill="#2a231b"/><path d="M0 14L14 0" stroke="#3a3025" stroke-width="1"/></pattern></defs><rect width="100%" height="100%" fill="url(#rk)"/>';
+  s+='<path d="'+perfilPath(g,sx,sy)+'" fill="#5B4A3A" stroke="#C9B79C" stroke-width="2"/>';
+  if(S.modo==='dano'){var rr=R.dano.rRot*k;R.holes.forEach(function(h){if(h.t==='contorno'||h.t==='zapatera')s+='<circle cx="'+sx(h.x)+'" cy="'+sy(h.y)+'" r="'+rr+'" fill="#e5484d" fill-opacity=".22" stroke="#e5484d" stroke-opacity=".5"/>'})}
+  // cotas
+  s+='<g font-family="IBM Plex Mono,monospace" font-size="'+(0.16*k)+'" fill="#d9cdbb"><text x="'+sx(0)+'" y="'+(sy(0)+0.4*k)+'" text-anchor="middle">'+f2(g.W)+' m</text><text x="'+(sx(-g.W/2)-0.38*k)+'" y="'+sy(g.H/2)+'" text-anchor="middle" transform="rotate(-90 '+(sx(-g.W/2)-0.38*k)+' '+sy(g.H/2)+')">'+f2(g.H)+' m</text></g>';
+  R.holes.forEach(function(h,i){var fill=COL[h.t],r=rad,op=1,lbl='';
+    if(S.modo==='periodo'&&h.t!=='alivio'){fill=PCOL[(h.p-1)%PCOL.length];lbl='P'+h.p}
+    if(S.modo==='carga'&&h.t!=='alivio'){op=0.35+0.65*(h.kg/maxKg);r=rad*(0.7+0.6*h.kg/maxKg);lbl=f1(h.kg)}
+    if(h.g==='Ayudas')fill=S.modo==='tipo'?'var(--c-ayu)':fill;
+    var lit=t!=null&&h.ms!=null&&h.ms<=t,fired=lit&&t-h.ms<120;
+    if(t!=null&&h.t!=='alivio'){op=lit?1:0.35}
+    s+='<g data-h="'+i+'" style="cursor:pointer">'+(fired?'<circle cx="'+sx(h.x)+'" cy="'+sy(h.y)+'" r="'+(r*2.6)+'" fill="#ffd36b" fill-opacity=".55"/>':'')+
+      '<circle cx="'+sx(h.x)+'" cy="'+sy(h.y)+'" r="'+r+'" fill="'+(h.t==='alivio'?'#1b1712':fill)+'" fill-opacity="'+op+'" stroke="'+(h.t==='alivio'?'#fff':(S.sel===i?'#fff':'#0b0b0b'))+'" stroke-width="'+(S.sel===i?3:h.t==='alivio'?2:1)+'"/>'+
+      (h.libre===false?'<circle cx="'+sx(h.x)+'" cy="'+sy(h.y)+'" r="'+(r+4)+'" fill="none" stroke="#ff4d4d" stroke-width="2" stroke-dasharray="4 3"/>':'')+
+      (lbl?'<text x="'+sx(h.x)+'" y="'+(sy(h.y)-r-3)+'" text-anchor="middle" font-family="IBM Plex Mono,monospace" font-size="'+(0.13*k)+'" fill="#fff">'+lbl+'</text>':'')+'</g>'});
+  // corte (manija para arrastrar)
+  s+='<circle id="cutH" cx="'+sx(R.cx)+'" cy="'+sy(R.cy)+'" r="'+(rad*3.2)+'" fill="none" stroke="#ffd36b" stroke-dasharray="6 5" stroke-width="2" style="cursor:move"/>';
+  return s+'</svg>'}
+function legend(){if(S.modo==='periodo')return R.periodos.map(function(p){return '<span><i style="background:'+PCOL[(p.p-1)%PCOL.length]+'"></i>P'+p.p+' · '+f0(p.ms)+' ms</span>'}).join('');
+  var c={},L=[];R.holes.forEach(function(h){var k=h.t==='alivio'?'Alivio':h.g;c[k]=(c[k]||0)+1});
+  [['Arranque','var(--c-arr)'],['Ayudas','var(--c-ayu)'],['Destrozo','var(--c-des)'],['Tablas','var(--c-con)'],['Hombros','var(--c-con)'],['Corona','var(--c-con)'],['Zapateras','var(--c-zap)'],['Sequía','var(--c-seq)'],['Alivio','#1b1712;border:2px solid #888']].forEach(function(x){if(c[x[0]])L.push('<span><i style="background:'+x[1]+'"></i>'+x[0]+' ('+c[x[0]]+')</span>')});
+  return L.join('')+(S.modo==='dano'?'<span><i style="background:#e5484d;opacity:.5"></i>Zona de rotura ('+f2(R.dano.rRot)+' m)</span>':'')}
+
+/* ---------- gráficos simples ---------- */
+function lineChart(o){var W=520,H=220,pl=46,pr=12,pt=12,pb=34,xs=o.xs,ys=o.ys;var x0=o.xlog?Math.log10(o.xmin):o.xmin,x1=o.xlog?Math.log10(o.xmax):o.xmax,y0=o.ylog?Math.log10(o.ymin):o.ymin,y1=o.ylog?Math.log10(o.ymax):o.ymax;
+  function X(x){var v=o.xlog?Math.log10(x):x;return pl+(v-x0)/(x1-x0)*(W-pl-pr)}function Y(y){var v=o.ylog?Math.log10(Math.max(y,o.ymin)):y;return H-pb-(v-y0)/(y1-y0)*(H-pt-pb)}
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(o.title||'')+'"><g font-family="IBM Plex Mono,monospace" font-size="10" fill="var(--mute)">';
+  (o.xt||[]).forEach(function(x){s+='<line x1="'+X(x)+'" x2="'+X(x)+'" y1="'+pt+'" y2="'+(H-pb)+'" stroke="var(--line2)"/><text x="'+X(x)+'" y="'+(H-pb+14)+'" text-anchor="middle">'+x+'</text>'});
+  (o.yt||[]).forEach(function(y){s+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(y)+'" y2="'+Y(y)+'" stroke="var(--line2)"/><text x="'+(pl-6)+'" y="'+(Y(y)+3)+'" text-anchor="end">'+y+'</text>'});
+  s+='<text x="'+((W+pl)/2)+'" y="'+(H-4)+'" text-anchor="middle">'+esc(o.xl||'')+'</text><text x="12" y="'+((H-pb+pt)/2)+'" transform="rotate(-90 12 '+((H-pb+pt)/2)+')" text-anchor="middle">'+esc(o.yl||'')+'</text></g>';
+  (o.series||[]).forEach(function(se){s+='<polyline fill="none" stroke="'+se.c+'" stroke-width="'+(se.w||2.5)+'"'+(se.dash?' stroke-dasharray="6 5"':'')+' points="'+se.p.map(function(p){return X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1)}).join(' ')+'"/>'});
+  (o.hl||[]).forEach(function(l){s+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+Y(l.y)+'" y2="'+Y(l.y)+'" stroke="'+l.c+'" stroke-dasharray="4 4"/><text x="'+(W-pr-4)+'" y="'+(Y(l.y)-4)+'" text-anchor="end" font-size="10" font-family="IBM Plex Mono,monospace" fill="'+l.c+'">'+esc(l.t)+'</text>'});
+  (o.pts||[]).forEach(function(p){s+='<circle cx="'+X(p[0])+'" cy="'+Y(p[1])+'" r="'+(p[3]||5)+'" fill="'+(p[2]||'var(--warm)')+'" stroke="var(--surface)" stroke-width="2"/>'});
+  return s+'</svg>'}
+
+/* ---------- vistas ---------- */
+function vDiseno(){var g=D.geom,est=R.estado==='conforme'?'ok':R.estado==='revisar'?'error':'aviso',nok=R.alertas.length-R.nAvisos;
+  var h='<div class="panel estado '+est+'"><span class="dot '+est+'"></span><h3>'+(R.estado==='conforme'?'Diseño conforme':R.estado==='revisar'?'Revisar diseño':'Ajuste menor')+'</h3>'+(R.nAvisos?'<span class="pill '+est+'">'+R.nAvisos+' a revisar</span>':'')+'<span class="pill ok">'+nok+' en rango</span><span class="r mute" style="margin-left:auto;font-size:12.5px">'+(S.id?'Guardado en la mina':'Sin guardar')+'</span></div>';
+  h+='<div class="kpis"><div class="kpi a"><div class="l">Toneladas por disparo</div><div class="v">'+f0(R.ton)+'<small>t</small></div><div class="s">'+f1(R.vol)+' m³ · avance '+f2(R.av)+' m</div></div>'+
+   '<div class="kpi b"><div class="l">Factor de carga</div><div class="v">'+f2(R.fc)+'<small>kg/m³</small></div><div class="s">'+f2(R.pf)+' kg/t · objetivo '+f2(R.fcObj)+'</div></div>'+
+   '<div class="kpi"><div class="l">Barrenos</div><div class="v">'+R.holes.length+'</div><div class="s">'+R.nCarg+' cargados · '+f0(R.perfM)+' m perforados</div></div>'+
+   '<div class="kpi"><div class="l">Explosivo por disparo</div><div class="v">'+f1(R.kg)+'<small>kg</small></div><div class="s">'+f1(R.kgRet.nom)+' kg por retardo</div></div>'+
+   '<div class="kpi"><div class="l">Costo por metro</div><div class="v">'+f0(R.costo.porM)+'<small>USD/m</small></div><div class="s">'+f2(R.costo.porT)+' USD/t</div></div></div>';
+  var cz={};R.holes.forEach(function(x){cz[x.t]=(cz[x.t]||0)+1});
+  h+='<div class="grid6"><div><div class="l">Arranque</div><div class="v">'+(cz.arranque||0)+'</div></div><div><div class="l">Destrozo y ayudas</div><div class="v">'+(cz.destrozo||0)+'</div></div><div><div class="l">Contorno</div><div class="v">'+(cz.contorno||0)+'</div></div><div><div class="l">Zapateras</div><div class="v">'+(cz.zapatera||0)+'</div></div>'+
+   '<div><div class="l">Área de sección</div><div class="v">'+f2(R.A)+' m²</div></div><div><div class="l">Carga lineal</div><div class="v">'+f2(R.q)+' kg/m</div></div><div><div class="l">Avance máx. del corte</div><div class="v">'+f2(R.Lmax)+' m</div></div><div><div class="l">Vibración estimada</div><div class="v">'+f0(R.ppv)+' mm/s</div></div></div>';
+  h+='<div class="panel"><div class="ph"><h3>Esquema de perforación · '+f2(g.W)+'×'+f2(g.H)+' m</h3><span class="r seg" id="modos">'+[['tipo','Tipo'],['periodo','Tiempo'],['carga','Carga'],['dano','Daño']].map(function(m){return '<button type="button" data-m="'+m[0]+'"'+(S.modo===m[0]?' class="on"':'')+'>'+m[1]+'</button>'}).join('')+'</span></div>'+
+   '<div class="scheme" id="scheme">'+scheme(S.sim?S.sim.t:null)+'</div><div class="legend" id="leg">'+legend()+'</div>'+
+   '<div class="player noprint"><button class="btn sm" type="button" data-a="sim">'+(S.sim&&S.sim.run?'Pausa':'Simular disparo')+'</button><button class="btn g sm" type="button" data-a="simreset">Reiniciar</button><span class="t" id="simT">'+(S.sim?f0(S.sim.t)+' ms':'0 ms')+'</span><span class="mute" style="font-size:12.5px">Cada barreno destella al salir según su retardo. Arrastra el círculo amarillo para mover el corte.</span></div><div class="hinfo" id="hinfo">'+holeInfo()+'</div></div>';
+  h+='<div class="panel"><div class="ph"><h3>Alertas QA/QC</h3><small class="mute">Cada alerta indica qué ajustar</small></div><div class="alerts">'+R.alertas.slice().sort(function(a,b){var o={error:0,aviso:1,ok:2};return o[a.nivel]-o[b.nivel]}).map(function(a){return '<div class="al"><span class="pill '+a.nivel+'">'+(a.nivel==='ok'?'OK':a.nivel==='aviso'?'AVISO':'REVISAR')+'</span><span>'+esc(a.txt)+'</span>'+(a.nivel!=='ok'&&a.acc?'<small>→ '+esc(a.acc)+'</small>':'')+'</div>'}).join('')+'</div></div>';
+  h+='<div class="panel"><div class="ph"><h3>Secuencia de salida</h3><small class="mute">'+f1(R.kgRet.nom)+' kg por retardo (ventana 8 ms) · P95 '+f1(R.kgRet.p95)+' kg con dispersión</small></div><div class="tbl"><table><thead><tr><th>Periodo</th><th>Grupo</th><th class="n">Barrenos</th><th class="n">Salida</th><th class="n">kg</th></tr></thead><tbody>'+
+   R.periodos.map(function(p){return '<tr><td><span class="pill" style="background:'+PCOL[(p.p-1)%PCOL.length]+';color:#111">P'+p.p+'</span></td><td>'+esc(p.grupo)+'</td><td class="n">'+p.n+'</td><td class="n">'+f0(p.ms)+' ms</td><td class="n">'+f1(p.kg)+'</td></tr>'}).join('')+
+   '<tr class="sum"><td>Total</td><td></td><td class="n">'+R.nCarg+'</td><td class="n">'+f0(R.periodos.length?R.periodos[R.periodos.length-1].ms:0)+' ms</td><td class="n">'+f1(R.kg)+'</td></tr></tbody></table></div><p class="note">Orden: corte → ayudas y destrozo desde el corte hacia afuera → tablas → hombros y corona → zapateras al final para levantar la pila.</p></div>';
+  // análisis
+  var dists=[5,10,20,50,100,200,500],v=D.vibr;
+  h+='<div class="g2"><div class="panel chart"><div class="ph"><h3>Vibración contra distancia</h3><span class="r pill '+(R.ppv<=v.lim?'ok':'error')+'">'+f0(R.ppv)+' mm/s a '+f0(v.dist)+' m</span></div>'+
+   lineChart({title:'Vibración contra distancia',xlog:true,ylog:true,xmin:5,xmax:500,ymin:1,ymax:2000,xt:[5,10,20,50,100,200,500],yt:[1,10,100,1000],xl:'distancia (m, escala log)',yl:'PPV mm/s',
+    series:[{c:'var(--warm)',p:dists.map(function(x){return [x,E.ppv(v.K,v.beta,x,R.kgRet.nom)]})},{c:'var(--warm)',dash:1,w:1.5,p:dists.map(function(x){return [x,E.ppv(v.K,v.beta,x,R.kgRet.p95)]})}],hl:[{y:v.lim,c:'var(--bad)',t:'límite '+v.lim+' mm/s'}],pts:[[v.dist,R.ppv]]})+
+   '<div class="grid6" style="margin-top:8px"><div><div class="l">Distancia que cumple</div><div class="v">'+f0(R.distMin)+' m</div></div><div><div class="l">kg/retardo admisible</div><div class="v">'+f1(R.qAdm)+' kg</div></div><div><div class="l">Distancia escalada</div><div class="v">'+f1(v.dist/Math.sqrt(R.kgRet.nom||1))+' m/√kg</div></div></div>'+
+   '<p class="note">PPV = K·(D/√Q)<sup>−β</sup> con K '+f0(v.K)+' y β '+f2(v.beta)+(D.vibr.calibrado?' calibrados con '+D.vibr.calibrado+' lecturas de esta mina.':' genéricos: calíbralos con lecturas de sismógrafo en la pestaña Real.')+'</p></div>';
+  h+='<div class="panel chart"><div class="ph"><h3>Fragmentación estimada</h3><span class="r pill '+(R.frag.bolones<=5?'ok':'aviso')+'">P80 '+f1(R.frag.P80)+' cm</span></div>'+
+   lineChart({title:'Curva granulométrica',xlog:true,xmin:1,xmax:100,ymin:0,ymax:100,xt:[1,2,5,10,20,50,100],yt:[0,20,40,60,80,100],xl:'tamaño (cm, escala log)',yl:'% pasante',series:[{c:'var(--accent)',p:(function(){var a=[];for(var x=1;x<=100;x*=1.2)a.push([x,100*(1-Math.exp(-0.693*Math.pow(x/R.frag.X50,R.frag.n)))]);return a})()}],hl:[{y:80,c:'var(--mute)',t:'P80'}]})+
+   '<div class="grid6" style="margin-top:8px"><div><div class="l">P50</div><div class="v">'+f1(R.frag.X50)+' cm</div></div><div><div class="l">Bolones > 50 cm</div><div class="v">'+f1(R.frag.bolones)+' %</div></div><div><div class="l">Uniformidad n</div><div class="v">'+f2(R.frag.n)+'</div></div></div>'+
+   '<p class="note">Kuz-Ram (Cunningham). Estimación de escritorio para comparar diseños; se calibra con fotos de la pila.</p></div></div>';
+  var zs=Object.keys(R.zonas).map(function(k){return [k,R.zonas[k]]}).sort(function(a,b){return b[1].kg-a[1].kg});
+  h+='<div class="g2"><div class="panel"><div class="ph"><h3>Daño y sobreexcavación</h3><span class="r pill '+(R.dano.sobre<=0.15?'ok':'aviso')+'">'+f2(R.dano.sobre)+' m</span></div><div class="grid6"><div><div class="l">Sobreexc. media</div><div class="v">'+f2(R.dano.sobre)+' m</div></div><div><div class="l">Sobreexc. máxima</div><div class="v">'+f2(R.dano.sobreMax)+' m</div></div><div><div class="l">Volumen extra</div><div class="v">'+f2(R.dano.vol)+' m³</div></div><div><div class="l">Umbral daño / rotura</div><div class="v">'+f0(R.dano.umbral)+' / '+f0(R.dano.rotura)+'</div></div></div><p class="note">Holmberg–Persson con la carga real del contorno ('+D.malla.contornoPct+' %). Rotura a 3× el umbral de daño para RMR '+D.roca.rmr+'. Calibra con el perfil escaneado.</p></div>'+
+   '<div class="panel"><div class="ph"><h3>Energía por zona</h3></div>'+zs.map(function(z){var pc=z[1].kg/R.kg*100;return '<div style="display:grid;grid-template-columns:110px 1fr 120px;gap:8px;align-items:center;margin:5px 0;font-size:13px"><span>'+esc(z[0])+'</span><span class="bar"><i style="width:'+pc.toFixed(1)+'%"></i></span><span class="mono" style="text-align:right">'+f1(z[1].kg)+' kg · '+f0(pc)+' %</span></div>'}).join('')+
+   '<div class="grid6" style="margin-top:10px"><div><div class="l">Volumen suelto</div><div class="v">'+f0(R.rezaga.suelto)+' m³</div></div><div><div class="l">Cucharones de 6 t</div><div class="v">'+R.rezaga.cuch+'</div></div><div><div class="l">Energía</div><div class="v">'+f0(R.energia)+' MJ</div></div></div></div></div>';
+  h+='<div class="panel"><div class="ph"><h3>Cómo se calculó</h3></div><div style="font-size:13px;display:grid;gap:5px">'+
+   '<div>Sección '+(g.forma==='rect'?'rectangular':'en herradura')+' de '+f2(g.W)+' × '+f2(g.H)+' m → área '+f2(R.A)+' m². Avance '+f2(g.L)+' m × '+g.eff+' % = '+f2(R.av)+' m → '+f1(R.vol)+' m³ × '+f2(D.roca.dens)+' t/m³ = '+f0(R.ton)+' t.</div>'+
+   '<div>Carga lineal q = π/4·(Ø·acopl.)²·ρ = π/4·('+D.malla.d+' mm·'+D.malla.acopl+')²·'+f2(R.prod.rho)+' = '+f2(R.q)+' kg/m.</div>'+
+   '<div>Corte: Ø equivalente de alivio = √n·Ø = '+f0(R.phiEq*1000)+' mm → avance máximo 0,15 + 34,1·Ø − 39,4·Ø² = '+f2(R.Lmax)+' m (Holmberg).</div>'+
+   '<div>Burden sugerido: Langefors con explosivo '+esc(R.prod.nombre)+' y factor de roca '+f2(R.kr)+' (RMR '+D.roca.rmr+', UCS '+D.roca.ucs+' MPa) = '+f2(R.Bsug)+' m.</div>'+
+   '<div>Factor de carga objetivo (14/A + 0,8)/Kr² = '+f2(R.fcObj)+' kg/m³; diseño '+f1(R.kg)+' kg / '+f1(R.vol)+' m³ = '+f2(R.fc)+' kg/m³.</div>'+
+   '<div>Supuestos que debes calibrar: constantes de vibración, umbral de daño, factor de roca de Kuz-Ram y precios. Todo lo demás sale de tu captura.</div></div></div>';
+  $('#t-diseno').innerHTML=h;bindScheme()}
+function holeInfo(){if(S.sel==null||!R.holes[S.sel])return 'Toca un barreno para ver sus datos.';var h=R.holes[S.sel];
+  return esc(h.id+' · '+h.g+(h.p?' · P'+h.p+' ('+f0(h.ms)+' ms)':'')+' · x '+f2(h.x)+' y '+f2(h.y)+' m'+(h.kg?' · '+f2(h.kg)+' kg · columna '+f2(h.col)+' m':' · vacío')+(h.libre===false?' · SIN CARA LIBRE':''))}
+function bindScheme(){var svg=$('#svgS');if(!svg)return;var drag=false;
+  function toM(ev){var pt=svg.createSVGPoint();var e=ev.touches?ev.touches[0]:ev;pt.x=e.clientX;pt.y=e.clientY;var p=pt.matrixTransform(svg.getScreenCTM().inverse());var g=D.geom,pad=0.6;return {x:p.x/100-g.W/2-pad,y:g.H+pad-p.y/100}}
+  svg.addEventListener('pointerdown',function(ev){if(ev.target.id==='cutH'){drag=true;svg.setPointerCapture(ev.pointerId);ev.preventDefault();return}var g=ev.target.closest('[data-h]');if(g){S.sel=+g.dataset.h;$('#hinfo').textContent=holeInfo();redrawScheme()}});
+  svg.addEventListener('pointermove',function(ev){if(!drag)return;var m=toM(ev);D.corte.dx=Math.round(m.x*20)/20;D.corte.y=Math.round(Math.max(0.4,Math.min(D.geom.H-0.4,m.y))*20)/20;calc();redrawScheme()});
+  svg.addEventListener('pointerup',function(){if(drag){drag=false;changed(true)}})}
+function redrawScheme(){var el=$('#scheme');if(el){el.innerHTML=scheme(S.sim?S.sim.t:null);$('#leg').innerHTML=legend();bindScheme()}}
+
+function vCarga(){var c=R.costo,P=E.planCarga(R);
+  var grp=null,h='<div class="kpis"><div class="kpi a"><div class="l">Costo del disparo</div><div class="v">'+f0(c.total)+'<small>USD</small></div><div class="s">explosivo '+f0(c.items[0][5]/c.total*100)+' % · perforación '+f0((c.items[4][5]+c.items[5][5])/c.total*100)+' %</div></div>'+
+   '<div class="kpi b"><div class="l">Costo por tonelada</div><div class="v">'+f2(c.porT)+'<small>USD/t</small></div><div class="s">'+f2(c.porM3)+' USD/m³</div></div><div class="kpi"><div class="l">Costo por metro de avance</div><div class="v">'+f0(c.porM)+'<small>USD/m</small></div><div class="s">avance '+f2(R.av)+' m</div></div>'+
+   '<div class="kpi"><div class="l">Explosivo del disparo</div><div class="v">'+f1(R.kg)+'<small>kg</small></div><div class="s">'+(P.totCart?P.totCart+' cartuchos · ':'')+P.cajas+' cajas de 25 kg</div></div></div>';
+  h+='<div class="panel"><div class="ph"><h3>Desglose de costos</h3><small class="mute">precios editables: se guardan con el diseño</small></div><div class="tbl"><table><thead><tr><th>Concepto</th><th class="n">Cantidad</th><th class="n">Precio</th><th class="n">Subtotal USD</th><th>Participación</th></tr></thead><tbody>'+
+   c.items.map(function(i,ix){var row='';if(i[0]!==grp){grp=i[0];row+='<tr class="grp"><td colspan="5">'+esc(grp)+'</td></tr>'}
+     var key=['__exp','det','booster','linea','perf','rima','manoHH'][ix];
+     return row+'<tr><td>'+esc(i[1])+'</td><td class="n">'+f1(i[2])+' '+esc(i[3])+'</td><td class="n"><input type="number" step="0.05" min="0" data-cost="'+key+'" value="'+f2(i[4]).replace(',','.')+'"></td><td class="n">'+f2(i[5])+'</td><td><span class="bar" style="display:block;width:120px"><i style="width:'+(c.total?i[5]/c.total*100:0).toFixed(1)+'%"></i></span></td></tr>'}).join('')+
+   '<tr class="sum"><td>Total del disparo</td><td></td><td></td><td class="n">'+f2(c.total)+'</td><td></td></tr></tbody></table></div></div>';
+  var sens=E.sensibilidad(D,S.cat),okS=sens.filter(function(s){return s.ok}),mn=okS.reduce(function(m,s){return !m||s.usdT<m.usdT?s:m},null);
+  h+='<div class="g2"><div class="panel chart"><div class="ph"><h3>Sensibilidad: costo contra burden</h3><small class="mute">±30 % con E/B constante</small></div>'+
+   lineChart({title:'Costo contra burden',xmin:sens[0].B,xmax:sens[sens.length-1].B,ymin:0,ymax:Math.ceil(Math.max.apply(null,sens.map(function(s){return s.usdT}))*1.15),xt:sens.map(function(s){return +s.B.toFixed(2)}),yt:[0,2,4,6,8,10,12,15,20].filter(function(y){return y<=Math.ceil(Math.max.apply(null,sens.map(function(s){return s.usdT}))*1.15)}),xl:'burden (m)',yl:'USD/t',
+    series:[{c:'var(--accent)',p:sens.map(function(s){return [s.B,s.usdT]})}],pts:sens.map(function(s){return [s.B,s.usdT,s.ok?'var(--ok)':'var(--bad)',4]}).concat([[D.malla.B,R.costo.porT,'var(--warm)',7]])})+
+   '<p class="note">Verde: factor de carga dentro del objetivo. '+(mn?'Mínimo dentro del objetivo: <b>'+f2(mn.usdT)+' USD/t con burden '+f2(mn.B)+' m</b> ('+(mn.usdT<R.costo.porT?'ahorra '+f0((R.costo.porT-mn.usdT)*R.ton)+' USD por disparo':'el actual ya es el mínimo')+').':'')+' No incluye rezagado ni voladura secundaria.</p></div>';
+  var cmp=E.comparar(D,S.cat);
+  h+='<div class="panel"><div class="ph"><h3>Comparativo de explosivos · misma malla</h3></div><div class="tbl"><table><thead><tr><th>Explosivo</th><th class="n">kg</th><th class="n">kg/m³</th><th class="n">Burden sug.</th><th class="n">USD/t</th><th class="n">vs. actual</th><th></th></tr></thead><tbody>'+
+   cmp.map(function(x){var act=x.p.id===D.exp.id;return '<tr><td>'+esc(x.p.nombre)+(x.apto?'':' <span class="pill error">no apto con agua</span>')+'</td><td class="n">'+f1(x.kg)+'</td><td class="n">'+f2(x.fc)+'</td><td class="n">'+f2(x.Bsug)+' m</td><td class="n">'+f2(x.usdT)+'</td><td class="n">'+(act?'actual':(x.total-R.costo.total>0?'+':'')+f0(x.total-R.costo.total)+' USD')+'</td><td>'+(act||!x.apto?'':'<button class="btn g sm" data-a="usarExp" data-id="'+esc(x.p.id)+'">Usar</button>')+'</td></tr>'}).join('')+'</tbody></table></div><p class="note">Un explosivo más energético admite más burden: si cambias, ajusta la malla antes de comparar el costo final.</p></div></div>';
+  h+='<div class="panel"><div class="ph"><h3>Plan de carga · hoja de campo</h3><small class="mute">q = '+f2(R.q)+' kg/m'+(P.cartKg?' · cartucho '+R.prod.cart[0]+'"×'+R.prod.cart[1]+'" = '+f2(P.cartKg)+' kg':' · a granel')+'</small><button class="r btn g sm" data-a="imprimir">Imprimir hoja</button></div><div class="tbl"><table><thead><tr><th>Grupo</th><th class="n">N°</th><th class="n">Columna m</th><th class="n">'+(P.cartKg?'Cartuchos/barreno':'kg/barreno')+'</th><th class="n">kg/barreno</th><th class="n">kg total</th><th>Periodos</th></tr></thead><tbody>'+
+   P.filas.map(function(f){return '<tr><td>'+esc(f.g)+'</td><td class="n">'+f.n+'</td><td class="n">'+(f.kgB?f2(f.col):'—')+'</td><td class="n">'+(f.kgB?(P.cartKg?f.cart:f2(f.kgB)):'vacío')+'</td><td class="n">'+f2(f.kgB)+'</td><td class="n">'+f1(f.kg)+'</td><td>'+esc(f.per)+'</td></tr>'}).join('')+
+   '<tr class="sum"><td>Total</td><td class="n">'+R.holes.length+'</td><td></td><td class="n">'+(P.totCart||'')+'</td><td></td><td class="n">'+f1(R.kg)+'</td><td></td></tr></tbody></table></div>'+
+   (P.cartKg&&Math.abs(P.kgCart-R.kg)/R.kg>0.08?'<p class="note" style="color:var(--warn)">Ojo: '+P.totCart+' cartuchos suman '+f1(P.kgCart)+' kg contra '+f1(R.kg)+' kg del diseño. Ajusta el acoplamiento (paso 3) para que costo y factor de carga reflejen lo que realmente se carga.</p>':'')+'</div>';
+  h+='<div class="panel" id="vale"><div class="ph"><h3>Vale de salida del polvorín</h3><span class="mute" style="font-size:12.5px">'+esc(D.nombre||'Diseño sin nombre')+' · '+new Date().toLocaleDateString('es-EC')+'</span></div><div class="tbl"><table><thead><tr><th>Material</th><th>Descripción</th><th class="n">Cantidad</th><th>Presentación</th></tr></thead><tbody>'+
+   '<tr><td>Explosivo</td><td>'+esc(R.prod.nombre)+'</td><td class="n">'+f1(P.cartKg?P.kgCart:R.kg)+' kg</td><td>'+(P.totCart?P.totCart+' cartuchos · ':'')+P.cajas+' caja(s) de 25 kg</td></tr>'+
+   (D.costos.booster?'<tr><td>Iniciación</td><td>Booster / cebo</td><td class="n">'+R.nCarg+' u</td><td></td></tr>':'')+
+   P.dets.map(function(x){return '<tr><td>Iniciación</td><td>Detonador N° '+x.p+' · '+f0(x.ms)+' ms</td><td class="n">'+x.n+' u</td><td>manguera '+f1(x.mang)+' m</td></tr>'}).join('')+
+   '<tr><td>Iniciación</td><td>Línea de inicio (mecha de seguridad, fulminante, cordón o conectores)</td><td class="n">1 juego</td><td></td></tr></tbody></table></div><p class="note">'+R.nCarg+' detonadores para '+R.nCarg+' barrenos cargados. Manguera = barreno + 1 m, al largo comercial. Agrega la reserva que exija el procedimiento del polvorín.</p></div>';
+  $('#t-carga').innerHTML=h}
+
+function vReal(){var fr=D.frente&&S.frentes[D.frente],ds=S.disparos.filter(function(x){return !D.frente||x.frente===D.frente}).sort(function(a,b){return String(b.fecha).localeCompare(a.fecha)});
+  var ef=E.eficienciaReal(ds),h='';
+  h+='<div class="kpis"><div class="kpi a"><div class="l">Disparos reales'+(fr?' · '+esc(fr.nombre):'')+'</div><div class="v">'+ds.length+'</div><div class="s">registrados en Structiar (últimos 120 días)</div></div>'+
+   '<div class="kpi b"><div class="l">Eficiencia real</div><div class="v">'+(ef?f1(ef.media):'—')+'<small>%</small></div><div class="s">diseño '+D.geom.eff+' %'+(ef?' · '+ef.n+' disparos':'')+'</div></div>'+
+   '<div class="kpi"><div class="l">Explosivo real promedio</div><div class="v">'+(ds.length?f1(ds.reduce(function(s,x){return s+(+x.kg||0)},0)/ds.length):'—')+'<small>kg</small></div><div class="s">diseño '+f1(R.kg)+' kg</div></div></div>';
+  h+='<div class="panel"><div class="ph"><h3>Cerrar el ciclo: diseño contra lo ejecutado</h3></div>'+(D.frente?'':'<div class="banner info" style="margin-bottom:10px">Vincula este diseño a un frente (arriba, en el panel izquierdo) para comparar solo sus disparos.</div>')+
+   (ef?'<p style="margin:0 0 10px">La eficiencia real medida es <b>'+f1(ef.media)+' %</b>'+(Math.abs(ef.media-D.geom.eff)>=2?' y el diseño supone '+D.geom.eff+' %. <button class="btn sm" data-a="usarEff" data-v="'+Math.round(ef.media)+'">Usar '+Math.round(ef.media)+' % en el diseño</button>':', igual a la del diseño.')+'</p>':'<p class="mute" style="margin:0 0 10px">Aún no hay disparos con largo perforado y avance registrados para este frente. Regístralos en la pestaña Voladura de la app.</p>')+
+   '<div class="tbl"><table><thead><tr><th>Fecha</th><th>Frente</th><th class="n">Perforado</th><th class="n">Avance</th><th class="n">Eficiencia</th><th class="n">kg real</th><th class="n">vs. diseño</th><th>QA/QC</th></tr></thead><tbody>'+
+   (ds.length?ds.slice(0,40).map(function(x){var e=+x.perf?x.avance/x.perf*100:0,dk=R.kg?((+x.kg||0)-R.kg)/R.kg*100:0;return '<tr><td class="mono">'+esc(x.fecha)+'</td><td>'+esc((S.frentes[x.frente]||{}).nombre||'')+'</td><td class="n">'+f2(+x.perf)+'</td><td class="n">'+f2(+x.avance)+'</td><td class="n"><span class="pill '+(e>=88?'ok':e>=80?'aviso':'error')+'">'+f0(e)+' %</span></td><td class="n">'+f1(+x.kg)+'</td><td class="n">'+(x.kg?(dk>0?'+':'')+f0(dk)+' %':'—')+'</td><td>'+(x.qa&&x.qa.res?esc(x.qa.res):'—')+'</td></tr>'}).join(''):'<tr><td colspan="8"><div class="empty">Sin disparos registrados.</div></td></tr>')+'</tbody></table></div></div>';
+  var ss=Object.keys(S.sismos).map(function(k){return S.sismos[k]}).sort(function(a,b){return String(b.fecha).localeCompare(a.fecha)}),fit=E.ajustarVibracion(ss);
+  h+='<div class="g2"><div class="panel"><div class="ph"><h3>Lecturas de sismógrafo</h3><small class="mute">calibran K y β de la mina</small></div>'+
+   '<form id="fSis" class="noprint" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;align-items:end;margin-bottom:10px"><label class="f">Fecha<input type="date" name="fecha" value="'+new Date().toISOString().slice(0,10)+'"></label><label class="f">Distancia m<input type="number" step="0.5" name="dist" required></label><label class="f">kg/retardo<input type="number" step="0.1" name="q" required></label><label class="f">PPV mm/s<input type="number" step="0.1" name="ppv" required></label><button class="btn" type="submit">Agregar</button></form>'+
+   '<div class="tbl"><table><thead><tr><th>Fecha</th><th class="n">Distancia</th><th class="n">kg/ret.</th><th class="n">PPV</th><th class="n">Modelo</th><th></th></tr></thead><tbody>'+(ss.length?ss.map(function(x){return '<tr><td class="mono">'+esc(x.fecha)+'</td><td class="n">'+f1(+x.dist)+' m</td><td class="n">'+f1(+x.q)+'</td><td class="n">'+f1(+x.ppv)+'</td><td class="n">'+f1(E.ppv(D.vibr.K,D.vibr.beta,+x.dist,+x.q))+'</td><td><button class="btn g sm" data-a="delSis" data-id="'+esc(x.id)+'" aria-label="Borrar">✕</button></td></tr>'}).join(''):'<tr><td colspan="6"><div class="empty">Agrega al menos 3 lecturas para calibrar.</div></td></tr>')+'</tbody></table></div>'+
+   (fit?'<div class="banner info" style="margin-top:10px">Ajuste con '+fit.n+' lecturas: <b>K = '+f0(fit.K)+'</b>, <b>β = '+f2(fit.beta)+'</b> (R² '+f2(fit.r2)+'). <button class="btn sm" data-a="usarFit" data-k="'+fit.K+'" data-b="'+fit.beta+'" data-n="'+fit.n+'">Aplicar al diseño</button></div>':'')+'</div>';
+  h+='<div class="panel chart"><div class="ph"><h3>Lecturas contra el modelo</h3></div>'+lineChart({title:'PPV contra distancia escalada',xlog:true,ylog:true,xmin:1,xmax:200,ymin:1,ymax:2000,xt:[1,2,5,10,20,50,100,200],yt:[1,10,100,1000],xl:'distancia escalada (m/√kg)',yl:'PPV mm/s',
+    series:[{c:'var(--warm)',p:[1,2,5,10,20,50,100,200].map(function(sd){return [sd,D.vibr.K*Math.pow(sd,-D.vibr.beta)]})}].concat(fit?[{c:'var(--accent)',dash:1,p:[1,2,5,10,20,50,100,200].map(function(sd){return [sd,fit.K*Math.pow(sd,-fit.beta)]})}]:[]),
+    pts:ss.filter(function(x){return +x.q>0&&+x.dist>0}).map(function(x){return [x.dist/Math.sqrt(x.q),+x.ppv,'var(--accent)',5]})})+'<p class="note">Naranja: modelo del diseño. Turquesa: ajuste con tus lecturas.</p></div></div>';
+  $('#t-real').innerHTML=h}
+
+var PLANT=[
+ {n:'Galería 2,4×2,4 · jackleg · roca buena',d:{geom:{forma:'herradura',W:2.4,H:2.4,L:1.8,eff:90},malla:{d:38,B:0.65,E:0.75,taco:0.45,acopl:0.85,contornoPct:50,zapTaco:0.3},corte:{tipo:'quemado2',nAliv:1,dAliv:64,dx:0,y:null},roca:{rmr:65,ucs:120,estructura:'masiva',dens:2.7,agua:'seco'},exp:{id:'dinamita-sg'}}},
+ {n:'Galería 3×3 · jackleg · roca regular',d:{geom:{forma:'herradura',W:3,H:3,L:2.4,eff:90},malla:{d:38,B:0.8,E:0.9,taco:0.5,acopl:0.85,contornoPct:50,zapTaco:0.3},corte:{tipo:'quemado2',nAliv:2,dAliv:64,dx:0,y:null},roca:{rmr:55,ucs:100,estructura:'moderada',dens:2.7,agua:'seco'},exp:{id:'emul-cart'}}},
+ {n:'Galería 3×3 · roca mala con agua',d:{geom:{forma:'herradura',W:3,H:3,L:1.5,eff:85},malla:{d:38,B:0.6,E:0.7,taco:0.5,acopl:0.85,contornoPct:35,zapTaco:0.3},corte:{tipo:'quemado1',nAliv:2,dAliv:64,dx:0,y:null},roca:{rmr:35,ucs:40,estructura:'muy',dens:2.6,agua:'inundado'},exp:{id:'emul-cart'}}},
+ {n:'Rampa 4×4 · mecanizado · ANFO',d:{geom:{forma:'herradura',W:4,H:4,L:3.2,eff:92},malla:{d:45,B:0.9,E:1.0,taco:0.55,acopl:0.95,contornoPct:45,zapTaco:0.3},corte:{tipo:'quemado2',nAliv:2,dAliv:89,dx:0,y:null},roca:{rmr:60,ucs:110,estructura:'moderada',dens:2.7,agua:'seco'},exp:{id:'anfo'}}},
+ {n:'Chimenea 1,5×1,5 · cuña',d:{geom:{forma:'rect',W:1.5,H:1.5,L:1.5,eff:88},malla:{d:38,B:0.5,E:0.6,taco:0.4,acopl:0.85,contornoPct:60,zapTaco:0.3},corte:{tipo:'quemado1',nAliv:1,dAliv:76,dx:0,y:null},roca:{rmr:55,ucs:100,estructura:'moderada',dens:2.7,agua:'seco'},exp:{id:'dinamita-sg'}}}];
+function vBiblio(){var ds=Object.keys(S.disenos).map(function(k){return S.disenos[k]}).sort(function(a,b){return String(b.actualizado||'').localeCompare(a.actualizado||'')});
+  var h='<div class="panel"><div class="ph"><h3>Diseños de la mina</h3><small class="mute">compartidos con tu equipo</small></div>'+(ds.length?'<div class="tbl"><table><thead><tr><th>Diseño</th><th>Frente</th><th class="n">Barrenos</th><th class="n">kg</th><th class="n">kg/m³</th><th class="n">USD/m</th><th>Estado</th><th></th></tr></thead><tbody>'+
+   ds.map(function(x){var r=x.resumen||{};return '<tr><td><b>'+esc(x.nombre||'Sin nombre')+'</b>'+(x.estandar?' <span class="pill ok">estándar</span>':'')+'<div class="mute" style="font-size:12px">'+esc(x.actualizado||'')+'</div></td><td>'+esc((S.frentes[x.frente]||{}).nombre||'—')+'</td><td class="n">'+(r.n||'')+'</td><td class="n">'+f1(r.kg)+'</td><td class="n">'+f2(r.fc)+'</td><td class="n">'+f0(r.usdM)+'</td><td><span class="pill '+(r.estado==='conforme'?'ok':r.estado==='revisar'?'error':'aviso')+'">'+esc(r.estado||'')+'</span></td><td style="white-space:nowrap"><button class="btn sm" data-a="abrir" data-id="'+esc(x.id)+'">Abrir</button> <button class="btn g sm" data-a="estandar" data-id="'+esc(x.id)+'">'+(x.estandar?'Quitar estándar':'Marcar estándar')+'</button> <button class="btn g sm" data-a="borrar" data-id="'+esc(x.id)+'" aria-label="Borrar diseño">✕</button></td></tr>'}).join('')+'</tbody></table></div>':'<div class="empty">Aún no hay diseños guardados en esta mina. Ajusta uno y pulsa Guardar.</div>')+'</div>';
+  h+='<div class="panel"><div class="ph"><h3>Plantillas para empezar</h3><small class="mute">valores genéricos: ajústalos a tu mina</small></div><div class="cards">'+PLANT.map(function(p,i){return '<div class="card"><b>'+esc(p.n)+'</b><p>'+f1(p.d.geom.W)+'×'+f1(p.d.geom.H)+' m · '+f1(p.d.geom.L)+' m · Ø'+p.d.malla.d+' mm · '+esc(E.CORTES[p.d.corte.tipo])+' · RMR '+p.d.roca.rmr+'</p><div><button class="btn g sm" data-a="plantilla" data-i="'+i+'">Usar plantilla</button></div></div>'}).join('')+'</div></div>';
+  h+='<div class="panel"><div class="ph"><h3>Catálogo de explosivos</h3><small class="mute">valores típicos: edita el precio con el de tu contrato en Carga y costos</small></div><div class="tbl"><table><thead><tr><th>Producto</th><th class="n">ρ g/cm³</th><th class="n">VOD m/s</th><th class="n">RWS</th><th>Agua</th><th>Presentación</th><th class="n">USD/kg</th></tr></thead><tbody>'+
+   S.cat.map(function(p){return '<tr><td>'+esc(p.nombre)+'</td><td class="n">'+f2(p.rho)+'</td><td class="n">'+f0(p.vod)+'</td><td class="n">'+p.rws+'</td><td>'+esc(p.agua)+'</td><td>'+esc(p.pres)+(p.cart?' '+p.cart[0]+'"×'+p.cart[1]+'"':'')+'</td><td class="n">'+f2(p.precio)+'</td></tr>'}).join('')+'</tbody></table></div><p class="note">Datos genéricos de referencia por tipo de producto. Para un producto comercial usa su ficha técnica.</p></div>';
+  $('#t-biblio').innerHTML=h}
+
+function renderAll(){calc();updSummaries();fillInputs();['diseno','carga','real','biblio'].forEach(function(t){$('#t-'+t).hidden=S.tab!==t});
+  document.querySelectorAll('#tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.t===S.tab)});
+  if(S.tab==='diseno')vDiseno();else if(S.tab==='carga')vCarga();else if(S.tab==='real')vReal();else vBiblio();
+  $('#saveSt').textContent=S.dirty?'Cambios sin guardar':(S.id?'Guardado':'');var ban='';
+  if(!S.pro)ban='<div class="banner warn">Estás viendo Voladura Pro sin el plan Pro activo: puedes calcular, pero no guardar diseños ni lecturas. <a class="btn sm" href="../">Volver a la app</a></div>';
+  $('#ban').innerHTML=ban;$('#bGuardar').disabled=!S.pro||!(S.rol==='admin'||S.rol==='colaborador')}
+var rt;function changed(full){S.dirty=true;try{localStorage.setItem('svp-borrador',JSON.stringify(D))}catch(e){}clearTimeout(rt);rt=setTimeout(function(){if(full)renderAll();else{calc();updSummaries();if(S.tab==='diseno')vDiseno();else renderAll()}},90)}
+
+/* ---------- eventos ---------- */
+document.addEventListener('input',function(e){var el=e.target;if(el.dataset.p){var v=el.type==='number'?(el.value===''?null:+el.value):el.value;set(D,el.dataset.p,v);changed();return}
+  if(el.id==='mNombre'){D.nombre=el.value;S.dirty=true;return}if(el.id==='mResp'){D.responsable=el.value;S.dirty=true;return}
+  if(el.dataset.cost){var v2=+el.value;if(!isFinite(v2))return;if(el.dataset.cost==='__exp'){S.cat=S.cat.map(function(p){return p.id===D.exp.id?Object.assign({},p,{precio:v2}):p});D.precioExp=v2}else D.costos[el.dataset.cost]=v2;S.dirty=true;clearTimeout(rt);rt=setTimeout(function(){calc();var a=document.activeElement&&document.activeElement.dataset.cost;vCarga();if(a){var n=document.querySelector('[data-cost="'+a+'"]');if(n){n.focus();n.select&&n.select()}}},500)}});
+document.addEventListener('change',function(e){var el=e.target;if(el.id==='mFrente'){D.frente=el.value;var f=S.frentes[el.value];if(f){if(+f.ancho)D.geom.W=+f.ancho;if(+f.alto)D.geom.H=+f.alto;if(!D.nombre)D.nombre=f.nombre}changed(true)}});
+document.addEventListener('toggle',function(e){var d=e.target;if(d.dataset&&d.dataset.s)openSteps[d.dataset.s]=d.open},true);
+document.addEventListener('click',function(e){var b=e.target.closest('[data-t]');if(b&&b.closest('#tabs')){S.tab=b.dataset.t;renderAll();return}
+  var m=e.target.closest('[data-m]');if(m){S.modo=m.dataset.m;vDiseno();return}
+  var a=e.target.closest('[data-a]');if(!a)return;var act=a.dataset.a,id=a.dataset.id;
+  if(act==='bsug'){D.malla.B=Math.round(R.Bsug*20)/20;D.malla.E=Math.round(D.malla.B*1.15*20)/20;changed(true);toast('Burden '+f2(D.malla.B)+' m y espaciamiento '+f2(D.malla.E)+' m')}
+  else if(act==='sim'){simToggle()}else if(act==='simreset'){stopSim();S.sim=null;vDiseno()}
+  else if(act==='usarExp'){D.exp.id=id;changed(true);toast('Explosivo cambiado. Revisa la malla con el burden sugerido.')}
+  else if(act==='usarEff'){D.geom.eff=+a.dataset.v;changed(true);toast('Eficiencia del diseño ajustada a la real')}
+  else if(act==='usarFit'){D.vibr.K=Math.round(+a.dataset.k);D.vibr.beta=Math.round(+a.dataset.b*100)/100;D.vibr.calibrado=+a.dataset.n;changed(true);toast('Constantes de vibración calibradas')}
+  else if(act==='delSis'){if(!confirm('¿Borrar esta lectura?'))return;delete S.sismos[id];sb.from('docs').delete().eq('mina_id',S.mina.id).eq('coll','sismos').eq('id',id).then(function(r){if(r.error)toast('No se pudo borrar')});vReal()}
+  else if(act==='reset'){if(!confirm('¿Volver a los valores iniciales?'))return;var keep={nombre:D.nombre,frente:D.frente,responsable:D.responsable};D=Object.assign(E.defaults(),keep);changed(true)}
+  else if(act==='nuevo'){if(S.dirty&&!confirm('Hay cambios sin guardar. ¿Empezar un diseño nuevo?'))return;D=E.defaults();S.id=null;S.dirty=false;S.tab='diseno';renderAll()}
+  else if(act==='duplicar'){S.id=null;D.nombre=(D.nombre||'Diseño')+' (copia)';S.dirty=true;renderAll();toast('Copia lista: pulsa Guardar para conservarla')}
+  else if(act==='guardar'){guardar()}else if(act==='pdf'){pdf()}else if(act==='csv'){csv()}
+  else if(act==='imprimir'){window.print()}
+  else if(act==='abrir'){var x=S.disenos[id];if(!x)return;if(S.dirty&&!confirm('Hay cambios sin guardar. ¿Abrir otro diseño?'))return;D=Object.assign(E.defaults(),x.design||{});S.id=id;S.dirty=false;S.tab='diseno';renderAll();window.scrollTo(0,0)}
+  else if(act==='plantilla'){var p=PLANT[+a.dataset.i];if(S.dirty&&!confirm('Hay cambios sin guardar. ¿Usar la plantilla?'))return;var nd=E.defaults();Object.keys(p.d).forEach(function(k){nd[k]=Object.assign({},nd[k],p.d[k])});nd.nombre=p.n;D=nd;S.id=null;S.dirty=true;S.tab='diseno';renderAll();window.scrollTo(0,0)}
+  else if(act==='estandar'){var y=S.disenos[id];if(!y)return;y.estandar=!y.estandar;saveDoc('disenos',id,strip(y)).then(function(){vBiblio()})}
+  else if(act==='borrar'){if(!confirm('¿Borrar este diseño para toda la mina?'))return;sb.from('docs').delete().eq('mina_id',S.mina.id).eq('coll','disenos').eq('id',id).then(function(r){if(r.error){toast(r.error.message);return}delete S.disenos[id];if(S.id===id)S.id=null;vBiblio();toast('Diseño borrado')})}});
+document.addEventListener('submit',function(e){if(e.target.id!=='fSis')return;e.preventDefault();var f=new FormData(e.target),o={fecha:f.get('fecha'),dist:+f.get('dist'),q:+f.get('q'),ppv:+f.get('ppv'),frente:D.frente||''};
+  if(!(o.dist>0&&o.q>0&&o.ppv>0)){toast('Completa distancia, kg por retardo y PPV');return}if(!S.pro){toast('Las lecturas se guardan con el plan Pro');return}
+  var id=uid();saveDoc('sismos',id,o).then(function(ok){if(ok){o.id=id;S.sismos[id]=o;vReal();toast('Lectura guardada')}})});
+window.addEventListener('beforeunload',function(e){if(S.dirty){e.preventDefault();e.returnValue=''}});
+
+/* ---------- simulación ---------- */
+function stopSim(){if(S.sim&&S.sim.raf)cancelAnimationFrame(S.sim.raf);if(S.sim)S.sim.run=false}
+function simToggle(){if(S.sim&&S.sim.run){stopSim();vDiseno();return}var end=(R.periodos.length?R.periodos[R.periodos.length-1].ms:0)+300;if(!S.sim||S.sim.t>=end)S.sim={t:0};S.sim.run=true;var last=performance.now();
+  var speed=end>2000?1:0.25;(function step(now){if(!S.sim||!S.sim.run)return;S.sim.t+=(now-last)*speed;last=now;if(S.sim.t>=end){S.sim.t=end;S.sim.run=false}var el=$('#scheme');if(el){el.innerHTML=scheme(S.sim.t);$('#simT').textContent=f0(S.sim.t)+' ms'}
+    if(S.sim.run)S.sim.raf=requestAnimationFrame(step);else vDiseno()})(last);var b=document.querySelector('[data-a="sim"]');if(b)b.textContent='Pausa'}
+
+/* ---------- datos (Supabase) ---------- */
+function strip(o){var c=Object.assign({},o);delete c.id;return c}
+function saveDoc(coll,id,data){return sb.from('docs').upsert({mina_id:S.mina.id,coll:coll,id:id,data:data}).then(function(r){if(r.error){toast(/row-level|permission/i.test(r.error.message)?'Sin permiso: requiere plan Pro activo y rol Colaborador o Administrador.':'No se pudo guardar: '+r.error.message);return false}return true},function(){toast('Sin conexión: no se guardó');return false})}
+function guardar(){if(!D.nombre){toast('Ponle un nombre al diseño');$('#mNombre').focus();return}var id=S.id||uid(),now=new Date();
+  var doc={nombre:String(D.nombre).slice(0,100),frente:D.frente||'',design:D,estandar:S.id&&S.disenos[S.id]?!!S.disenos[S.id].estandar:false,actualizado:now.toISOString().slice(0,16).replace('T',' '),por:S.uid,
+    resumen:{n:R.holes.length,kg:+R.kg.toFixed(1),fc:+R.fc.toFixed(2),usdM:+R.costo.porM.toFixed(0),estado:R.estado,av:+R.av.toFixed(2)}};
+  saveDoc('disenos',id,doc).then(function(ok){if(!ok)return;S.id=id;doc.id=id;S.disenos[id]=doc;S.dirty=false;renderAll();toast('Diseño guardado para toda la mina')})}
+async function cargar(){var m=S.mina.id;
+  var q=await sb.from('docs').select('coll,id,data').eq('mina_id',m).in('coll',['frentes','disenos','sismos']).limit(2000);
+  (q.data||[]).forEach(function(x){var o=Object.assign({},x.data,{id:x.id});if(x.coll==='frentes')S.frentes[x.id]=o;else if(x.coll==='disenos')S.disenos[x.id]=o;else S.sismos[x.id]=o});
+  var since=new Date(Date.now()-120*864e5).toISOString().slice(0,10);
+  var d=await sb.from('docs').select('id,data').eq('mina_id',m).eq('coll','disparos').gte('fecha',since).limit(2000);S.disparos=(d.data||[]).map(function(x){return Object.assign({},x.data,{id:x.id})})}
+
+/* ---------- informes ---------- */
+function svgPng(svgEl,w){return new Promise(function(res){try{var s=new XMLSerializer().serializeToString(svgEl).replace(/var\(--c-arr\)/g,'#E07B22').replace(/var\(--c-ayu\)/g,'#D9A21B').replace(/var\(--c-des\)/g,'#16A09A').replace(/var\(--c-con\)/g,'#2F6FD6').replace(/var\(--c-zap\)/g,'#8A4FD1').replace(/var\(--c-seq\)/g,'#7A8794').replace(/var\(--c-ali\)/g,'#ffffff');
+  var vb=svgEl.viewBox.baseVal,h=w*vb.height/vb.width,img=new Image();img.onload=function(){var c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res({data:c.toDataURL('image/png'),w:w,h:h})};img.onerror=function(){res(null)};
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s)}catch(e){res(null)}})}
+function loadJsPDF(){return new Promise(function(res,rej){if(window.jspdf)return res(window.jspdf.jsPDF);var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';s.integrity='sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk';s.crossOrigin='anonymous';s.onload=function(){res(window.jspdf.jsPDF)};s.onerror=rej;document.head.appendChild(s)})}
+function T(s){return String(s==null?'':s).replace(/[≥]/g,'>=').replace(/[≤]/g,'<=').replace(/[–—]/g,'-').replace(/[×]/g,'x').replace(/[√]/g,'raiz ').replace(/[^\x00-\xFF]/g,'')}
+async function pdf(){toast('Preparando el reporte…');var J;try{J=await loadJsPDF()}catch(e){toast('No se pudo cargar el generador de PDF');return}
+  if(S.tab!=='diseno'){S.tab='diseno';renderAll()}var png=await svgPng($('#svgS'),900);
+  var doc=new J({unit:'mm',format:'a4'}),W=210,M=14,y=0;
+  function head(){doc.setFillColor(14,34,51);doc.rect(0,0,W,20,'F');doc.setTextColor(255);doc.setFont('helvetica','bold');doc.setFontSize(14);doc.text('STRUCTIAR',M,12);doc.setTextColor(53,198,190);doc.text('· Voladura Pro',M+30,12);doc.setFontSize(8.5);doc.setTextColor(200,215,222);doc.setFont('helvetica','normal');doc.text(T((S.mina&&S.mina.nombre)||''),W-M,12,{align:'right'});y=28;doc.setTextColor(15,30,43)}
+  function need(h){if(y+h>282){doc.addPage();head()}}
+  function row(cols,ws,b){need(6);var x=M;doc.setFont('helvetica',b?'bold':'normal');doc.setFontSize(8.8);cols.forEach(function(c,i){doc.text(T(c).slice(0,Math.floor(ws[i]/1.6)),x,y);x+=ws[i]});y+=5}
+  function h2(t){need(12);doc.setFont('helvetica','bold');doc.setFontSize(11.5);doc.text(T(t),M,y);y+=1.8;doc.setDrawColor(14,140,134);doc.line(M,y,W-M,y);y+=5}
+  head();doc.setFont('helvetica','bold');doc.setFontSize(16);doc.text(T(D.nombre||'Diseño de voladura'),M,y);y+=6;doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(90,107,120);
+  doc.text(T((S.frentes[D.frente]||{}).nombre?'Frente: '+S.frentes[D.frente].nombre+' · ':'')+'Responsable: '+T(D.responsable||'-')+' · '+new Date().toLocaleDateString('es-EC')+' · Estado: '+T(R.estado.toUpperCase()),M,y);doc.setTextColor(15,30,43);y+=8;
+  h2('Resumen');[['Sección',f2(D.geom.W)+' x '+f2(D.geom.H)+' m ('+f2(R.A)+' m2)','Perforación',f2(D.geom.L)+' m · Ø '+D.malla.d+' mm'],['Avance',f2(R.av)+' m ('+D.geom.eff+' %)','Toneladas',f0(R.ton)+' t'],['Barrenos',R.holes.length+' ('+R.nCarg+' cargados)','Explosivo',f1(R.kg)+' kg · '+T(R.prod.nombre)],['Factor de carga',f2(R.fc)+' kg/m3 (obj. '+f2(R.fcObj)+')','kg por retardo',f1(R.kgRet.nom)+' kg'],['Vibración',f0(R.ppv)+' mm/s a '+D.vibr.dist+' m','Sobreexcavación',f2(R.dano.sobre)+' m'],['Fragmentación P80',f1(R.frag.P80)+' cm','Costo',f0(R.costo.total)+' USD · '+f0(R.costo.porM)+' USD/m']].forEach(function(r){row(r,[34,58,34,56])});
+  if(png){var iw=110,ih=iw*png.h/png.w;if(ih>120){ih=120;iw=ih*png.w/png.h}need(ih+12);h2('Esquema de perforación');doc.addImage(png.data,'PNG',(W-iw)/2,y,iw,ih);y+=ih+4}
+  h2('Secuencia');row(['Periodo','Grupo','Barrenos','Salida','kg'],[18,90,22,25,20],true);R.periodos.forEach(function(p){row(['P'+p.p,p.grupo,p.n,f0(p.ms)+' ms',f1(p.kg)],[18,90,22,25,20])});
+  h2('Alertas QA/QC');R.alertas.forEach(function(a){var t=(a.nivel==='ok'?'[OK] ':a.nivel==='aviso'?'[AVISO] ':'[REVISAR] ')+a.txt;doc.splitTextToSize(T(t),W-2*M).forEach(function(l){need(5);doc.setFont('helvetica',a.nivel==='ok'?'normal':'bold');doc.setFontSize(8.8);doc.text(l,M,y);y+=4.4})});
+  var P=E.planCarga(R);h2('Plan de carga');row(['Grupo','N','Columna m','Cartuchos','kg/barr.','kg total'],[50,14,24,24,24,24],true);P.filas.forEach(function(f){row([f.g,f.n,f.kgB?f2(f.col):'-',f.cart||'-',f2(f.kgB),f1(f.kg)],[50,14,24,24,24,24])});
+  h2('Costos');R.costo.items.forEach(function(i){row([i[1],f1(i[2])+' '+i[3],f2(i[4]),f2(i[5])+' USD'],[80,35,25,40])});row(['Total del disparo','','',f2(R.costo.total)+' USD'],[80,35,25,40],true);
+  need(14);doc.setFontSize(7.5);doc.setTextColor(120);doc.text(T('Estimaciones de ingeniería con métodos públicos (Holmberg, Langefors, Holmberg-Persson, Kuz-Ram). Calibrar con datos de la mina. Generado con Structiar Voladura Pro.'),M,290);
+  var name='Voladura-'+T(D.nombre||'diseno').replace(/[^\w\-]+/g,'-').slice(0,40)+'.pdf';doc.save(name);toast('Reporte descargado')}
+function csv(){var rows=[['id','tipo','grupo','x_m','y_m','periodo','salida_ms','kg','columna_m','cara_libre']];R.holes.forEach(function(h){rows.push([h.id,h.t,h.g,h.x.toFixed(3),h.y.toFixed(3),h.p||'',h.ms==null?'':h.ms,(h.kg||0).toFixed(2),(h.col||0).toFixed(2),h.libre===false?'no':'si'])});
+  var txt='﻿'+rows.map(function(r){return r.map(function(c){c=String(c);if(/^[=+\-@]/.test(c)&&!/^-?\d/.test(c))c="'"+c;return /[;"\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c}).join(';')}).join('\n');
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv'}));a.download='Barrenos-'+(D.nombre||'diseno').replace(/[^\w\-]+/g,'-').slice(0,40)+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){a.remove()},500)}
+
+/* ---------- arranque ---------- */
+function gate(h){$('#gate').innerHTML=h;$('#gate').hidden=false;$('#app').hidden=true}
+async function boot(){if(!sb){gate('<h2>No se pudo cargar</h2><p class="mute">Revisa tu conexión y recarga la página.</p>');return}
+  var s=(await sb.auth.getSession()).data.session;
+  if(!s){gate('<img src="../icons/icon-192.png" width="72" height="72" style="border-radius:16px" alt=""><h2 style="margin-top:14px">Voladura Pro</h2><p class="mute">Ingresa primero en Structiar Mina con tu cuenta.</p><a class="btn" href="../">Ingresar</a>');return}
+  S.uid=s.user.id;var r=await sb.from('miembros').select('rol,mina_id,minas(*)').eq('user_id',S.uid).limit(1);
+  var mm=r.data&&r.data[0];if(!mm){gate('<h2>Sin mina</h2><p class="mute">Crea tu mina o únete con un código en la app.</p><a class="btn" href="../">Ir a la app</a>');return}
+  S.mina=mm.minas;S.rol=mm.rol;try{var p=await sb.rpc('pro_activo',{m:S.mina.id});S.pro=!!p.data}catch(e){S.pro=false}
+  $('#app').hidden=false;$('#gate').hidden=true;renderSteps();renderAll();
+  try{await cargar()}catch(e){toast('No se pudieron cargar los datos de la mina')}renderAll()}
+boot();
+})();
+</script></body></html>

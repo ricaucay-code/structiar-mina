@@ -135,6 +135,7 @@ td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabula
 .banner b{color:var(--accent)}
 .confirm{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
 .ro .w{display:none!important}
+.hostedOnly{display:none!important}.hosted .hostedOnly{display:flex!important}
 .banner.lic{border-color:var(--line);background:var(--surface)}
 .banner.lic.end{border-color:var(--bad,#b3261e);background:var(--bad-bg,#fbe9e7)}
 .banner .r{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
@@ -344,7 +345,7 @@ details.calc pre{white-space:pre-wrap;font:12px/1.65 var(--f-mono);background:va
 
       <!-- VOLADURA -->
       <section class="view" id="v-voladura" hidden>
-        <div class="vhead"><div><div class="eyebrow">Perforación y voladura</div><h2 id="vTitle">Registro de disparos</h2><p id="vLede"></p></div></div>
+        <div class="vhead"><div><div class="eyebrow">Perforación y voladura</div><h2 id="vTitle">Registro de disparos</h2><p id="vLede"></p></div><div class="tools hostedOnly"><a class="btn" href="pro/">Abrir Voladura Pro</a></div></div>
         <div class="seg" id="vTabs" role="tablist" aria-label="Perforación y voladura"></div>
         <div id="vt-reg">
           <div class="g2">

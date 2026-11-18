@@ -1,0 +1,1 @@
+window.STRUCTIAR_CFG={"url": "https://qxcqzdytpcwgzsaaabsx.supabase.co", "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4Y3F6ZHl0cGN3Z3pzYWFhYnN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ3NDkzNTksImV4cCI6MjExMDMyNTM1OX0._ZvvI5_iU0Jau6Ljdkn27tdCF24SQ7ZwEFcvdEgBHCw"};
