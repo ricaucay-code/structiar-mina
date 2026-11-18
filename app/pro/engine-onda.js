@@ -61,13 +61,20 @@ function picoRapido(sig,modo){var best=0,ks=Object.keys(sig.comps),n=largo(sig);
   if(modo==='pvs'){for(var i=0;i<n;i++){var s=0;for(var j=0;j<ks.length;j++){var v=sig.comps[ks[j]][i]||0;s+=v*v}if(s>best)best=s}return Math.sqrt(best)}
   ks.forEach(function(k){if(modo&&modo!=='max'&&k!==modo)return;var x=sig.comps[k];for(var i=0;i<x.length;i++){var a=Math.abs(x[i]);if(a>best)best=a}});return best}
 
-/* barrido de retardos entre taladros: amplificación nominal y con dispersión de detonadores (Monte Carlo) */
-function barrido(sig,o){o=o||{};var n=clamp(Math.round(+o.n||6),2,60),dMin=Math.max(0.5,+o.dMin||1),dMax=Math.max(dMin+1,+o.dMax||40),paso=clamp(+o.paso||0.5,0.1,10),disp=Math.max(0,+o.disp||0),runs=disp>0?clamp(Math.round(+o.corridas||40),5,400):1,modo=o.modo||'pvs';
-  var u=picoRapido(sig,modo)||1,g=gaussF(rngF(o.seed||7)),pts=[];
-  for(var d=dMin;d<=dMax+1e-9;d+=paso){var tn=[];for(var i=0;i<n;i++)tn.push(i*d);var an=picoRapido(superponer(sig,tn),modo)/u,arr=[];
-    if(disp>0){for(var r=0;r<runs;r++){var ts=tn.map(function(t){return t+g()*Math.max(t,d)*disp/100})
-        ;arr.push(picoRapido(superponer(sig,ts),modo)/u)}arr.sort(function(a,b){return a-b})}
-    pts.push({d:Math.round(d*100)/100,a:an,p50:arr.length?arr[Math.floor(arr.length*0.5)]:an,p95:arr.length?arr[Math.min(arr.length-1,Math.floor(arr.length*0.95))]:an})}
+/* barrido de retardos entre taladros: amplificación nominal y con dispersión de detonadores (Monte Carlo).
+   Suma en búferes reutilizados para no generar basura en memoria (importante en teléfonos). */
+function barrido(sig,o){o=o||{};var n=clamp(Math.round(+o.n||6),2,60),dMin=Math.max(0.5,+o.dMin||1),dMax=Math.max(dMin+1,+o.dMax||40),paso=clamp(+o.paso||0.5,0.1,10),disp=Math.max(0,+o.disp||0),runs=disp>0?clamp(Math.round(+o.corridas||40),5,200):1,modo=o.modo||'pvs';
+  if((dMax-dMin)/paso>300)paso=(dMax-dMin)/300;
+  var ks=Object.keys(sig.comps).filter(function(k){return modo==='pvs'||modo==='max'||k===modo});if(!ks.length)ks=Object.keys(sig.comps);
+  var xs=ks.map(function(k){return sig.comps[k]}),nx=largo(sig),dt=sig.dt,maxSh=Math.ceil((dMax*(n-1)*(1+4*disp/100)+dMax)/1000/dt)+2,Lb=nx+maxSh,buf=xs.map(function(){return new Float64Array(Lb)});
+  function picoT(ts){var t0=Infinity,i,j,h;for(i=0;i<ts.length;i++)if(ts[i]<t0)t0=ts[i];var L=0,sh=new Array(ts.length);for(h=0;h<ts.length;h++){sh[h]=Math.min(maxSh-1,Math.max(0,Math.round((ts[h]-t0)/1000/dt)));if(sh[h]+nx>L)L=sh[h]+nx}
+    for(j=0;j<xs.length;j++){var y=buf[j],x=xs[j];for(i=0;i<L;i++)y[i]=0;for(h=0;h<sh.length;h++){var o2=sh[h];for(i=0;i<x.length;i++)y[o2+i]+=x[i]}}
+    var best=0;if(modo==='pvs'){for(i=0;i<L;i++){var q=0;for(j=0;j<buf.length;j++)q+=buf[j][i]*buf[j][i];if(q>best)best=q}return Math.sqrt(best)}
+    for(j=0;j<buf.length;j++)for(i=0;i<L;i++){var a=Math.abs(buf[j][i]);if(a>best)best=a}return best}
+  var u=picoRapido(sig,modo)||1,g=gaussF(rngF(o.seed||7)),pts=[],tn=new Array(n),ts=new Array(n),arr=new Float64Array(runs);
+  for(var d=dMin;d<=dMax+1e-9;d+=paso){for(var i=0;i<n;i++)tn[i]=i*d;var an=picoT(tn)/u,p50=an,p95=an;
+    if(disp>0){for(var r=0;r<runs;r++){for(var k=0;k<n;k++)ts[k]=tn[k]+g()*Math.max(tn[k],d)*disp/100;arr[r]=picoT(ts)/u}var srt=Array.prototype.slice.call(arr).sort(function(a,b){return a-b});p50=srt[Math.floor(runs*0.5)];p95=srt[Math.min(runs-1,Math.floor(runs*0.95))]}
+    pts.push({d:Math.round(d*100)/100,a:an,p50:p50,p95:p95})}
   var orden=pts.slice().sort(function(a,b){return a.p95-b.p95||a.d-b.d}),peor=pts.reduce(function(m,p){return p.p95>m.p95?p:m},pts[0]);
   return {pts:pts,mejor:orden[0],top:orden.slice(0,5),peor:peor,ppvU:u,n:n,disp:disp,modo:modo,aMax:n}}
 

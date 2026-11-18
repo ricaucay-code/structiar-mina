@@ -113,11 +113,11 @@ td input{min-height:30px;padding:3px 6px;max-width:90px}
 </div>
 <div class="toast" id="toast" hidden></div>
 <script src="../vendor/supabase-2.45.4.js"></script>
-<script src="config.js"></script>
-<script src="engine.js"></script>
-<script src="engine-geo.js"></script>
-<script src="engine-lh.js"></script>
-<script src="engine-onda.js"></script>
+<script src="config.js?v=20261118c"></script>
+<script src="engine.js?v=20261118c"></script>
+<script src="engine-geo.js?v=20261118c"></script>
+<script src="engine-lh.js?v=20261118c"></script>
+<script src="engine-onda.js?v=20261118c"></script>
 <script>
 (function(){'use strict';
 var E=window.SVE,C=window.STRUCTIAR_CFG||{},sb=null;try{sb=supabase.createClient(C.url,C.key,{auth:{persistSession:true,autoRefreshToken:true}})}catch(e){}
@@ -133,6 +133,9 @@ function set(o,p,v){var ks=p.split('.'),l=ks.pop(),t=ks.reduce(function(a,k){ret
 /* ---------- estado ---------- */
 var S={ringSel:null,uid:null,mina:null,rol:null,pro:false,frentes:{},disparos:[],disenos:{},sismos:{},cat:E.CATALOGO.slice(),id:null,dirty:false,tab:'diseno',modo:'tipo',sel:null,sim:null};
 var D=E.defaults(),R=null;
+/* arranque seguro: si la página no terminó de cargar dos veces seguidas, se abre con valores iniciales */
+var BOOT=0,RESCATE=false;try{BOOT=+localStorage.getItem('svp-boot')||0;localStorage.setItem('svp-boot',String(BOOT+1));if(BOOT>=2){RESCATE=true;localStorage.setItem('svp-borrador-rescate',localStorage.getItem('svp-borrador')||'');localStorage.removeItem('svp-borrador');localStorage.removeItem('svp-onda');localStorage.setItem('svp-boot','1')}}catch(e){}
+function bootOk(){try{localStorage.setItem('svp-boot','0')}catch(e){}}
 try{var ls=JSON.parse(localStorage.getItem('svp-borrador'));if(ls&&ls.tipo==='larga')D=Object.assign(E.LH.defaultsLH(),ls);else if(ls&&ls.geom)D=Object.assign(E.defaults(),ls)}catch(e){}
 function LHm(){return D.tipo==='larga'}
 function calc(){R=LHm()?E.LH.disenarLH(D):E.disenar(D,S.cat)}
@@ -493,7 +496,8 @@ function ondaChart(sig,title,ref){var ks=Object.keys(sig.comps),n=E.ONDA.largo(s
   var series=ks.map(function(k){var x=sig.comps[k],p=[];for(var i=0;i<x.length;i++)p.push([i*sig.dt*1000,x[i]]);return {c:OCOL[k]||'var(--ink)',w:1.4,p:diezmar(p,450)}});
   return lineChart({title:title,xmin:0,xmax:tMax,ymin:-ym,ymax:ym,xt:ticks(0,tMax,8),yt:ticks(-ym,ym,6),xl:'tiempo (ms)',yl:'mm/s',series:series,hl:ref?[{y:ref,c:'var(--bad)',t:'PPV unitaria '+f1(ref)},{y:-ref,c:'var(--bad)',t:''}]:[]})+
    '<div class="mute" style="font-size:12px;display:flex;gap:14px;flex-wrap:wrap;margin-top:4px">'+ks.map(function(k){return '<span><i style="display:inline-block;width:14px;height:3px;background:'+OCOL[k]+';vertical-align:middle;margin-right:5px"></i>'+({T:'Transversal',V:'Vertical',L:'Longitudinal'}[k]||k)+'</span>'}).join('')+'</div>'}
-function vOnda(){var W=E.ONDA,h='';try{ondaCalc()}catch(e){OS.err=e.message;OD.fuente='sint';ondaCalc()}
+function vOnda(){var W=E.ONDA,h='',liv=false;try{if(localStorage.getItem('svp-onda-run')==='1'){liv=true;OD.corridas=Math.min(OD.corridas||40,15);OD.paso=Math.max(OD.paso||0.5,1);OD.fuente='sint';OS.key='';ondaGuardar()}localStorage.setItem('svp-onda-run','1')}catch(e){}
+  try{ondaCalc()}catch(e){OS.err=e.message;OD.fuente='sint';ondaCalc()}if(liv&&!OS.err)OS.err='El cálculo anterior no terminó en este equipo: bajamos a 15 corridas y paso de 1 ms. Puedes subirlos de nuevo.';
   var sig=OS.sig,B=OS.B,pk=W.pico(sig),u=B.ppvU,fd=OS.esp.fDom,Tp=fd?1000/fd:null,sel=OD.sel!=null?B.pts.reduce(function(m,p){return Math.abs(p.d-OD.sel)<Math.abs(m.d-OD.sel)?p:m},B.pts[0]):B.mejor,LH=LHm();
   var esp=LH?+D.perf.E:+D.malla.E,win=[3*esp,15*esp],enW=B.pts.filter(function(p){return p.d>=win[0]-1e-9&&p.d<=win[1]+1e-9}),rec=(function(L){if(!L.length)return B.mejor;var mn=Math.min.apply(null,L.map(function(p){return p.p95}));return L.filter(function(p){return p.p95<=mn*1.1}).sort(function(a,b){return a.d-b.d})[0]})(enW);
   if(OD.sel==null)sel=rec;
@@ -530,7 +534,7 @@ function vOnda(){var W=E.ONDA,h='';try{ondaCalc()}catch(e){OS.err=e.message;OD.f
    '<p class="note">'+(okEsc?'Escala por distancia escalada: (D/√Q ÷ D₀/√Q₀)^−β con β '+f2(beta)+' del diseño → factor '+f2(fe)+'. PPV esperada a '+f1(sel.d)+' ms: <b>'+f0(pred)+' mm/s</b> contra límite '+f0(lim)+' mm/s.':'Completa carga y distancia del taladro medido y del diseño para predecir la PPV en el punto a proteger con β '+f2(beta)+' del diseño.')+'</p>'+
    (okEsc?'<div class="banner '+(pred<=lim?'info':'warn')+'" style="margin:8px 0">'+(pred<=lim?'Dentro del límite con '+f0((1-pred/lim)*100)+' % de margen.':'Supera el límite: usa '+f1(rec.d)+' ms, reduce la carga por taladro o separa la secuencia.')+'</div>':'')+
    (LH?'<button class="btn" data-a="oUsar">Usar '+f1(sel.d)+' ms entre taladros del anillo</button> <span class="mute" style="font-size:12px">hoy: '+f1(D.disparo.msTal)+' ms</span>':'<p class="note">En desarrollos con serie MS, elige números de retardo cuya separación quede lejos de los múltiplos del período. Con detonadores electrónicos programa '+f1(rec.d)+' ms entre taladros del mismo grupo.</p>')+'</div>';
-  var ae=document.activeElement,fk=ae&&ae.dataset&&ae.dataset.o;$('#t-onda').innerHTML=h;if(fk){var ne=document.querySelector('#t-onda [data-o="'+fk+'"]');if(ne&&ne.type!=='file')ne.focus()}}
+  var ae=document.activeElement,fk=ae&&ae.dataset&&ae.dataset.o;$('#t-onda').innerHTML=h;try{localStorage.setItem('svp-onda-run','0')}catch(e){}if(fk){var ne=document.querySelector('#t-onda [data-o="'+fk+'"]');if(ne&&ne.type!=='file')ne.focus()}}
 function ondaCambio(){ondaGuardar();clearTimeout(ondaCambio.t);ondaCambio.t=setTimeout(function(){if(S.tab==='onda')vOnda()},250)}
 document.addEventListener('input',function(e){var el=e.target;if(!el.dataset||!el.dataset.o)return;var v=el.type==='number'?(el.value===''?null:+el.value):el.value;setO(el.dataset.o,v);if(el.dataset.o==='unidad'&&OS.txt){try{OS.raw=E.ONDA.parseCSV(OS.txt,OD.unidad);OS.key=''}catch(er){OS.err=er.message}}if(el.tagName==='SELECT'||el.dataset.o==='sel'){ondaGuardar();if(el.dataset.o==='sel'){clearTimeout(ondaCambio.t);ondaCambio.t=setTimeout(vOnda,350)}else vOnda()}else ondaCambio()});
 document.addEventListener('change',function(e){var el=e.target;if(el.id!=='oFile'||!el.files||!el.files[0])return;var f=el.files[0];if(f.size>25e6){OS.err='El archivo supera 25 MB.';vOnda();return}
@@ -545,7 +549,8 @@ function renderAll(){calc();updSummaries();fillInputs();['diseno','carga','real'
   document.querySelectorAll('#tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.t===S.tab)});
   if(S.tab==='diseno')(LHm()?vDisenoLH:vDiseno)();else if(S.tab==='carga')(LHm()?vCargaLH:vCarga)();else if(S.tab==='real')vReal();else if(S.tab==='onda')vOnda();else vBiblio();
   $('#saveSt').textContent=S.dirty?'Cambios sin guardar':(S.id?'Guardado':'');var ban='';
-  if(!S.pro)ban='<div class="banner warn">Estás viendo Voladura Pro sin el plan Pro activo: puedes calcular, pero no guardar diseños ni lecturas. <a class="btn sm" href="../">Volver a la app</a></div>';
+  if(RESCATE)ban+='<div class="banner info">La página se cerró antes de terminar de cargar y la abrimos con valores iniciales. Tu borrador anterior quedó respaldado en este equipo.</div>';
+  if(!S.pro)ban+='<div class="banner warn">Estás viendo Voladura Pro sin el plan Pro activo: puedes calcular, pero no guardar diseños ni lecturas. <a class="btn sm" href="../">Volver a la app</a></div>';
   $('#ban').innerHTML=ban;$('#bGuardar').disabled=!S.pro||!(S.rol==='admin'||S.rol==='colaborador')}
 var rt;function changed(full){S.dirty=true;try{localStorage.setItem('svp-borrador',JSON.stringify(D))}catch(e){}clearTimeout(rt);rt=setTimeout(function(){if(full)renderAll();else{calc();updSummaries();if(S.tab==='diseno')(LHm()?vDisenoLH:vDiseno)();else renderAll()}},90)}
 
@@ -651,14 +656,14 @@ function csv(){if(LHm())return csvLH();var rows=[['id','tipo','grupo','x_m','y_m
   var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv'}));a.download='Barrenos-'+(D.nombre||'diseno').replace(/[^\w\-]+/g,'-').slice(0,40)+'.csv';document.body.appendChild(a);a.click();setTimeout(function(){a.remove()},500)}
 
 /* ---------- arranque ---------- */
-function gate(h){$('#gate').innerHTML=h;$('#gate').hidden=false;$('#app').hidden=true}
+function gate(h){bootOk();$('#gate').innerHTML=h;$('#gate').hidden=false;$('#app').hidden=true}
 async function boot(){if(!sb){gate('<h2>No se pudo cargar</h2><p class="mute">Revisa tu conexión y recarga la página.</p>');return}
   var s=(await sb.auth.getSession()).data.session;
-  if(!s){gate('<img src="../icons/icon-192.png" width="72" height="72" style="border-radius:16px" alt=""><h2 style="margin-top:14px">Voladura Pro</h2><p class="mute">Ingresa primero en Structiar Mina con tu cuenta.</p><a class="btn" href="../">Ingresar</a>');return}
+  if(!s){bootOk();gate('<img src="../icons/icon-192.png" width="72" height="72" style="border-radius:16px" alt=""><h2 style="margin-top:14px">Voladura Pro</h2><p class="mute">Ingresa primero en Structiar Mina con tu cuenta.</p><a class="btn" href="../">Ingresar</a>');return}
   S.uid=s.user.id;var r=await sb.from('miembros').select('rol,mina_id,minas(*)').eq('user_id',S.uid).limit(1);
   var mm=r.data&&r.data[0];if(!mm){gate('<h2>Sin mina</h2><p class="mute">Crea tu mina o únete con un código en la app.</p><a class="btn" href="../">Ir a la app</a>');return}
   S.mina=mm.minas;S.rol=mm.rol;try{var p=await sb.rpc('pro_activo',{m:S.mina.id});S.pro=!!p.data}catch(e){S.pro=false}
-  $('#app').hidden=false;$('#gate').hidden=true;renderSteps();renderAll();
+  $('#app').hidden=false;$('#gate').hidden=true;renderSteps();renderAll();setTimeout(bootOk,3000);
   try{await cargar()}catch(e){toast('No se pudieron cargar los datos de la mina')}renderAll()}
 boot();
 })();
