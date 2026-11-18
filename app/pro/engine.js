@@ -80,17 +80,20 @@ function generarCorte(d,cx,cy){var c=d.corte,phi=corteAvance(c.dAliv,c.nAliv).ph
   // alivios
   var na=Math.max(0,Math.round(c.nAliv)),sepA=c.dAliv/1000*1.15;
   if(c.tipo==='quemadoH'||c.tipo==='linea'){for(var i=0;i<na;i++)h.push({x:cx+(i-(na-1)/2)*sepA,y:cy,t:'alivio',g:'Alivio'})}
-  else if(c.tipo!=='cuna'){for(var j=0;j<na;j++){var ang=2*PI*j/na;h.push({x:cx+(na>1?sepA/2*Math.cos(ang):0),y:cy+(na>1?sepA/2*Math.sin(ang):0),t:'alivio',g:'Alivio'})}}
+  else if(c.tipo!=='cuna'){for(var j=0;j<na;j++){var ang=2*PI*j/na+(na===4?PI/4:0);h.push({x:cx+(na>1?sepA/2*Math.cos(ang):0),y:cy+(na>1?sepA/2*Math.sin(ang):0),t:'alivio',g:'Alivio'})}}
   if(c.tipo==='cuna'){var pares=3,dy=0.45;for(var p=0;p<pares;p++){var yy=cy+(p-(pares-1)/2)*dy;h.push({x:cx-0.5,y:yy,t:'arranque',g:'Arranque',sec:1});h.push({x:cx+0.5,y:yy,t:'arranque',g:'Arranque',sec:1})}
     return {holes:h,B1:0.5,B2:0,secciones:1}}
-  var B1=Math.max(1.5*phi,dd*4),a1=B1+phi/2;
+  var o=arguments[3]||{},L=+d.geom.L||3,Ep=0.01*L+0.02,ql=o.q||1,sA=o.s||1,cR=o.c||0.4,dh=Math.max(0.02,dd);
+  /* sección 1: a = 1,5·Ø equivalente desde el centro de los alivios (1,7·Ø − Ep si la desviación es alta) */
+  var a1=Math.max(1.5*phi,dh*4)+(na>1?sepA*0.25:0),W=a1*Math.SQRT2,secs=[{n:1,dist:a1,B:a1,W:W,ang:0}],B1=a1;
   if(c.tipo==='linea'){var off=(na*sepA)/2+B1;h.push({x:cx-off,y:cy,t:'arranque',g:'Arranque',sec:1});h.push({x:cx+off,y:cy,t:'arranque',g:'Arranque',sec:1});h.push({x:cx,y:cy+B1+phi/2,t:'arranque',g:'Arranque',sec:1});h.push({x:cx,y:cy-B1-phi/2,t:'arranque',g:'Arranque',sec:1});
-    return {holes:h,B1:B1,B2:0,secciones:1}}
-  for(var k=0;k<4;k++){var t=PI/2*k;h.push({x:cx+a1*Math.cos(t),y:cy+a1*Math.sin(t),t:'arranque',g:'Arranque',sec:1})}
-  var W1=Math.SQRT2*a1,B2=0;
-  if(c.tipo==='quemado2'||c.tipo==='quemadoH'){B2=Math.min(2*W1*0.6,1.2*W1);var a2=(W1/2+B2)*Math.SQRT2;
-    for(var m=0;m<4;m++){var t2=PI/4+PI/2*m;h.push({x:cx+a2*Math.cos(t2),y:cy+a2*Math.sin(t2),t:'arranque',g:'Arranque',sec:2})}}
-  return {holes:h,B1:B1,B2:B2,secciones:B2?2:1}}
+    return {holes:h,B1:B1,B2:0,secciones:1,secs:secs}}
+  /* secciones siguientes (Holmberg): B = 0,088·√(W·q·s / (d·c)), práctico B − Ep, máximo 2·W;
+     cuadrantes girados 45° hasta que el lado del último supere √L (máximo 4 secciones) */
+  var maxS=c.tipo==='quemadoH'?3:4,lim=Math.sqrt(L);
+  while(secs.length<maxS&&W<lim){var Bt=0.088*Math.sqrt(W*ql*sA/(dh*cR)),Bp=Math.max(0.15,Math.min(2*W,Bt)-Ep),dist=W/2+Bp,k=secs.length+1;W=Math.SQRT2*(Bp+W/2);secs.push({n:k,dist:dist,B:Bp,W:W,ang:(k%2===0)?PI/4:0})}
+  secs.forEach(function(sc){for(var m=0;m<4;m++){var t=sc.ang+PI/2*m;h.push({x:cx+sc.dist*Math.cos(t),y:cy+sc.dist*Math.sin(t),t:'arranque',g:sc.n<=2?'Arranque':'Ayudas',sec:sc.n})}});
+  var ult=secs[secs.length-1];return {holes:h,B1:B1,B2:secs[1]?secs[1].B:0,secciones:secs.length,secs:secs,ult:ult}}
 
 /* ---------- diseño completo ---------- */
 function num(v,def,a,b){v=+v;return clamp(isFinite(v)&&v!==0?v:def,a,b)}
@@ -101,25 +104,26 @@ function disenar(d,cat){d=JSON.parse(JSON.stringify(d));var g=d.geom,ml=d.malla,
   // burden sugerido (Langefors simplificado, corregido por roca)
   var s=ex.rws/100,f=1.45,EB=(ml.E/ml.B)||1.25,G0=GEOf(),CR=G0?G0.cRoca({modo:ro.cModo,c:ro.c,q:ro.q,ucs:ro.ucs,kr:kr}):{modo:'auto',c:0.4*kr*kr,cbar:0.4*kr*kr+0.05,txt:''},cU=CR.modo!=='auto'?1:null,c=CR.c,cbar=CR.cbar;
   var Bmax=0.9*Math.sqrt(q*s/(cbar*f*EB)),errP=0.05+0.03*g.L,Bsug=Math.max(0.3,Bmax-errP);
-  var cy=(d.corte.y==null?Math.min(g.H*0.42,g.H-g.W/2+0.2):d.corte.y),cx=d.corte.dx||0;
-  var C=generarCorte(d,cx,cy),holes=C.holes.slice();
+  var cy=(d.corte.y==null?Math.min(Math.max(1.2,g.H*0.3),g.H-g.W/2+0.2):d.corte.y),cx=d.corte.dx||0;
+  var C=generarCorte(d,cx,cy,{q:q,s:s,c:c}),holes=C.holes.slice();
   // contorno y zapateras
   var espC=15*dm;var margen=0.15,Bc=Math.min(ml.B,1.25*espC);
   contorno(g,espC,margen).forEach(function(p){holes.push({x:p.x,y:p.y,t:'contorno',g:p.z==='tabla'?'Tablas':p.z==='hombro'?'Hombros':'Corona'})});
   var nz=Math.max(2,Math.ceil((g.W-2*margen)/ml.E)+1);for(var i=0;i<nz;i++)holes.push({x:-(g.W/2-margen)+(g.W-2*margen)*i/(nz-1),y:0.15,t:'zapatera',g:'Zapateras'});
-  // destrozo: malla B×E dentro del perfil, fuera del corte y lejos del contorno
-  var aMax=C.holes.reduce(function(mx,h){return Math.max(mx,Math.hypot(h.x-cx,h.y-cy))},0);
-  // ayudas del corte (tercer cuadrante de Holmberg): sobre los ejes, a un burden del cuadrante anterior
-  var Wl=Math.SQRT2*aMax,aAy=(d.corte.tipo==='cuna'?aMax+ml.B*0.9:Wl/2+ml.B*0.9),mInt=margen+0.85*Bc;
-  (d.corte.tipo==='cuna'?[PI/4,3*PI/4,5*PI/4,7*PI/4]:[0,PI/2,PI,3*PI/2]).forEach(function(t){var x=cx+aAy*Math.cos(t),y=cy+aAy*Math.sin(t);
-    if(dentro(g,x,Math.max(y,mInt),mInt*0.8)&&y>0.15+ml.B*0.45)holes.push({x:x,y:y,t:'destrozo',g:'Ayudas',r:aAy})});
-  // destrozo: relleno adaptativo. Cada barreno nuevo va al punto de la sección más alejado de los existentes,
-  // hasta que ningún punto quede a más de la distancia de cobertura de una malla B×E.
-  var tCob=(+d.malla.kCob||0.75)*Math.sqrt(ml.B*ml.E),paso=0.05,cand=[],md=[];
-  for(var cyy=0.15+ml.B*0.55;cyy<g.H;cyy+=paso)for(var cxx=-g.W/2;cxx<=g.W/2;cxx+=paso){
-    if(!dentro(g,cxx,cyy,mInt))continue;if(Math.hypot(cxx-cx,cyy-cy)<aMax+ml.B*0.35)continue;cand.push([cxx,cyy])}
-  cand.forEach(function(c,k){var m=1e9;holes.forEach(function(h){var dd2=Math.hypot(h.x-c[0],h.y-c[1]);if(dd2<m)m=dd2});md[k]=m});
-  for(var it=0;it<400&&cand.length;it++){var bi=-1,bv=0;for(var k2=0;k2<cand.length;k2++)if(md[k2]>bv){bv=md[k2];bi=k2}
+  // destrozo: malla ordenada. Columnas alineadas con las zapateras (cada E) y filas cada B desde el piso;
+  // fuera del cuadrante final del cuele y a un burden de contorno del perímetro. Después se cubren huecos sueltos.
+  var mInt0=margen+0.85*Bc;holes=holes.filter(function(h){return !(h.t==='arranque'&&h.sec>=3&&(h.y<0.15+0.55*ml.B||!dentro(g,h.x,Math.max(h.y,mInt0),mInt0*0.7)))});
+  var aMax=C.holes.reduce(function(mx,h){return Math.max(mx,Math.hypot(h.x-cx,h.y-cy))},0),mInt=margen+0.85*Bc,U=null;(C.secs||[]).forEach(function(sc){if(holes.filter(function(h){return h.t==='arranque'&&h.sec===sc.n}).length===4)U=sc});
+  function enCuele(x,y){if(!U)return Math.hypot(x-cx,y-cy)<aMax+ml.B*0.5;var dx=Math.abs(x-cx),dy=Math.abs(y-cy),e=ml.B*0.55;
+    return U.ang===0?(dx+dy)<=U.dist+e*Math.SQRT2:Math.max(dx,dy)<=U.dist/Math.SQRT2+e}
+  function libre(x,y,f){return !holes.some(function(h){return Math.hypot(h.x-x,h.y-y)<f})}
+  var cols=[];for(var ic=1;ic<nz-1;ic++)cols.push(-(g.W/2-margen)+(g.W-2*margen)*ic/(nz-1));
+  for(var yy=0.15+ml.B;yy<g.H;yy+=ml.B)cols.forEach(function(x){if(!dentro(g,x,yy,mInt)||enCuele(x,yy)||!libre(x,yy,Math.min(ml.B,ml.E)*0.6))return;
+    holes.push({x:x,y:yy,t:'destrozo',g:'Destrozo',r:Math.hypot(x-cx,yy-cy)})});
+  var tCob=(+d.malla.kCob||0.72)*Math.sqrt(ml.B*ml.E),paso=0.05,cand=[],md=[];
+  for(var cyy=0.15+ml.B*0.55;cyy<g.H;cyy+=paso)for(var cxx=-g.W/2;cxx<=g.W/2;cxx+=paso){if(!dentro(g,cxx,cyy,mInt)||enCuele(cxx,cyy))continue;cand.push([cxx,cyy])}
+  cand.forEach(function(c2,k){var m=1e9;holes.forEach(function(h){var dd2=Math.hypot(h.x-c2[0],h.y-c2[1]);if(dd2<m)m=dd2});md[k]=m});
+  for(var it=0;it<200&&cand.length;it++){var bi=-1,bv=0;for(var k2=0;k2<cand.length;k2++)if(md[k2]>bv){bv=md[k2];bi=k2}
     if(bi<0||bv<tCob)break;var px=cand[bi][0],py=cand[bi][1];holes.push({x:px,y:py,t:'destrozo',g:'Destrozo',r:Math.hypot(px-cx,py-cy)});
     for(var k3=0;k3<cand.length;k3++){var dq=Math.hypot(cand[k3][0]-px,cand[k3][1]-py);if(dq<md[k3])md[k3]=dq}}
   if(d.sequia==='izq'||d.sequia==='der'){var sx=(d.sequia==='izq'?-1:1)*(g.W/2-margen-0.25);holes.push({x:sx,y:0.15+0.35,t:'sequia',g:'Sequía'})}
