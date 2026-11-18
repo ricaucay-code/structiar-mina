@@ -7,7 +7,8 @@ function clamp(x,a,b){return Math.max(a,Math.min(b,x))}
 function defaultsLH(){return {tipo:'larga',nombre:'',labor:'',frente:'',responsable:'',
   bloque:{H:15,largo:30,ley:5,densMin:2.8,densEst:2.7,recup:95},
   galInf:{W:3.5,H:3.5},galSup:{W:3.5,H:3.5},
-  veta:{w:3,dip:75,rmr:55,q:4,A:0.8,B:0.5,C:5.5},
+  veta:{w:3,dip:75,rmr:55,q:4,A:0.8,B:0.5,C:5.5,off:0,c:null,auto:false},
+  rumbo:0,estructuras:[],estaciones:[],
   perf:{modo:'asc',d:76,B:1.8,E:2.2,taco:1.5,stagger:1.0,dev:1.0,tacoMin:1.0},
   cuna:{tipo:'alivio',nAliv:3,dAliv:152,nCarg:8,dCarg:76},
   exp:{id:'anfo',acopl:1},
@@ -21,7 +22,7 @@ function defaultsLH(){return {tipo:'larga',nombre:'',labor:'',frente:'',responsa
    La veta es un paralelogramo con buzamiento dip: contacto bajo x = -w/2 + y·cot(dip), contacto alto x = w/2 + y·cot(dip). */
 function zona(d){var b=d.bloque,v=d.veta,gi=d.galInf,gs=d.galSup,ct=1/Math.tan(rad(clamp(v.dip,40,90)));
   var y0=gi.H,y1=b.H; // banco entre el techo de la galería inferior y el piso de la superior
-  function fw(y){return -v.w/2+y*ct}function hw(y){return v.w/2+y*ct}
+  var off=+v.off||0;function fw(y){return off-v.w/2+y*ct}function hw(y){return off+v.w/2+y*ct}
   var poly=[[fw(y0),y0],[hw(y0),y0],[hw(y1),y1],[fw(y1),y1]];
   return {poly:poly,y0:y0,y1:y1,fw:fw,hw:hw,ct:ct,area:v.w*(y1-y0),banco:y1-y0}}
 
@@ -51,18 +52,21 @@ function anillo(d){var Z=zona(d),p=d.perf,asc=p.modo!=='desc',gi=d.galInf,gs=d.g
 function prodRho(d){return E0.CATALOGO.filter(function(p){return p.id===d.exp.id})[0].rho}
 
 /* ---------- estabilidad y dilución ---------- */
-function mathews(d){var v=d.veta,b=d.bloque,Np=(+v.q||0)*(+v.A||0)*(+v.B||0)*(+v.C||0);
+function mathews(d){var v=d.veta,b=d.bloque,G=GEOf(),auto=null;if(v.auto&&G&&(d.estructuras||[]).filter(G.valida).length){auto=G.analizarTajo(d.estructuras,+d.rumbo||0,v.dip)}
+  var fB=auto&&auto.B!=null?auto.B:+v.B,fC=auto?auto.C:+v.C,Np=(+v.q||0)*(+v.A||0)*(fB||0)*(fC||0);
   var altoInc=(b.H)/Math.sin(rad(clamp(v.dip,40,90))),HR=(b.largo*altoInc)/(2*(b.largo+altoInc));
   var est=HR<2.2*Math.pow(Math.max(Np,0.01),0.31)?'estable':HR<4.4*Math.pow(Math.max(Np,0.01),0.29)?'transición':'hundimiento';
   var elosHW=Np>0?clamp(0.15*Math.pow(HR,1.15)/Math.pow(Np,0.4),0.05,4):null;
-  return {Np:Np,HR:HR,estado:Np>0?est:'sin datos',elosHW:elosHW,elosFW:elosHW!=null?elosHW*0.6:null}}
+  return {Np:Np,HR:HR,B:fB,C:fC,auto:auto,estado:Np>0?est:'sin datos',elosHW:elosHW,elosFW:elosHW!=null?elosHW*0.6:null}}
+function GEOf(){return (typeof root!=='undefined'&&root.SVE&&root.SVE.GEO)||(typeof require!=='undefined'?(function(){try{return require('./engine-geo.js')}catch(e){return null}})():null)}
 
 /* ---------- diseño completo ---------- */
 function disenarLH(d){d=JSON.parse(JSON.stringify(d));var b=d.bloque,v=d.veta,p=d.perf,ex=E0.CATALOGO.filter(function(x){return x.id===d.exp.id})[0]||E0.CATALOGO[0];
   var A=anillo(d),Z=A.Z,M=mathews(d),kr=E0.kRoca({rmr:v.rmr,ucs:100,estructura:'moderada'});
   var tonAn=Z.area*p.B*b.densMin,nAn=Math.max(1,Math.floor(b.largo/p.B)),nDisp=Math.max(1,d.disparo.anillos);
   // burden sugerido (Langefors sobre carga de la columna)
-  var Bsug=Math.max(0.8,0.85*(p.d/33)*Math.sqrt((ex.rho*ex.rws/100)/(0.4*1.0*(p.E/p.B)))*kr-(0.1+0.02*A.holes.reduce(function(m,h){return Math.max(m,h.len)},0)));
+  var cU=+v.c>0?+v.c:null,cL=cU!=null?cU:0.4/(kr*kr),cbar=cL+0.05,Lmx=A.holes.reduce(function(m,h){return Math.max(m,h.len)},0),fA=0.85;
+  var BmaxL=(p.d/33)*Math.sqrt((ex.rho*ex.rws/100)/(cbar*1.0*(p.E/p.B))),errP=0.05+p.dev/100*Lmx,Bsug=Math.max(0.8,fA*BmaxL-errP);
   // cuña (cara libre inicial): alivio + cargados alrededor, con desviación al fondo
   var C=d.cuna,phi=(C.tipo==='alivio'?C.dAliv/1000*Math.sqrt(Math.max(1,C.nAliv)):0),Lc=Z.banco+0.5,dev=Lc*p.dev/100;
   var B1=phi?1.2*phi:0,ratioFondo=phi?1.2+dev/phi:0,qC=E0.cargaLineal(C.dCarg,1,ex.rho),kgC=C.tipo==='alivio'?C.nCarg*qC*Math.max(0,Lc-1):0;
@@ -79,12 +83,24 @@ function disenarLH(d){d=JSON.parse(JSON.stringify(d));var b=d.bloque,v=d.veta,p=
   var tonEst=tonAn*(hwT+fwT)/v.w*(b.densEst/b.densMin),leyDil=b.ley*v.w/(v.w+hwT+fwT)*(b.densMin/((v.w*b.densMin+(hwT+fwT)*b.densEst)/(v.w+hwT+fwT)));
   // esponjamiento: el vacío disponible debe recibir el esponjamiento del disparo
   var esp=1.45,volDisp=Z.area*p.B*nDisp,vacio=(conC?vacioCuna:0)+Z.area*Math.max(0,+d.disparo.slot||0),necesita=volDisp*(esp-1);
-  var R={tipo:'larga',d:d,prod:ex,A:A,Z:Z,M:M,kr:kr,Bsug:Bsug,tonAn:tonAn,nAn:nAn,nDisp:nDisp,kgDisp:kgDisp,tonDisp:tonDisp,pfAn:pfAn,pfDisp:tonDisp?kgDisp/tonDisp:0,
+  var R={c:cL,cbar:cbar,cUser:cU!=null,BmaxL:BmaxL,errP:errP,fA:fA,tipo:'larga',d:d,prod:ex,A:A,Z:Z,M:M,kr:kr,Bsug:Bsug,tonAn:tonAn,nAn:nAn,nDisp:nDisp,kgDisp:kgDisp,tonDisp:tonDisp,pfAn:pfAn,pfDisp:tonDisp?kgDisp/tonDisp:0,
     cuna:{phi:phi,B1:B1,dev:dev,ratio:ratioFondo,kg:kgC,L:Lc,vacio:vacioCuna,n:C.nCarg},kgRet:kgRet,ppv:ppv,qAdm:qAdm,distMin:Math.sqrt(kgRet)*Math.pow(d.vibr.lim/d.vibr.K,-1/d.vibr.beta),
     elos:{hw:hwT,fw:fwT,voladura:elosV},dil:dil,tonEst:tonEst*nDisp,leyDil:leyDil,minBloque:Z.area*b.largo*b.densMin,
     esp:{factor:esp,vacio:vacio,necesita:necesita,ok:vacio>=necesita}};
   R.pfObj=(0.35+0.9/Math.max(0.8,v.w))/kr;
-  costosLH(R);alertasLH(R);return R}
+  costosLH(R);alertasLH(R);if(!d._sub)variables(R);return R}
+/* anillos variables: interpola potencia, buzamiento, desplazamiento y ley entre estaciones a lo largo del rumbo */
+function interp(est,x,k){if(x<=est[0].x)return +est[0][k];for(var i=1;i<est.length;i++){if(x<=est[i].x){var a=est[i-1],b=est[i],t=(x-a.x)/((b.x-a.x)||1);return +a[k]+(+b[k]-+a[k])*t}}return +est[est.length-1][k]}
+function variables(R){var d=R.d,est=(d.estaciones||[]).filter(function(e){return isFinite(+e.x)&&+e.w>0&&+e.dip>0}).map(function(e){return {x:+e.x,w:+e.w,dip:+e.dip,off:+e.off||0,ley:+e.ley||d.bloque.ley}}).sort(function(a,b){return a.x-b.x});
+  R.variable=est.length>=2;if(!R.variable){R.anillos=null;return}var slot=Math.max(0,+d.disparo.slot||0),out=[],tot={t:0,kg:0,m:0,est:0,au:0,auD:0};
+  for(var i=0;i<R.nAn;i++){var x=slot+d.perf.B*(i+0.5);if(x>d.bloque.largo)break;var dd=JSON.parse(JSON.stringify(d));dd._sub=1;dd.estaciones=[];
+    dd.veta.w=interp(est,x,'w');dd.veta.dip=interp(est,x,'dip');dd.veta.off=interp(est,x,'off');dd.bloque.ley=interp(est,x,'ley');dd.disparo.anillos=1;dd.disparo.conCuna=false;
+    var r=disenarLH(dd);out.push({n:i+1,x:x,w:dd.veta.w,dip:dd.veta.dip,off:dd.veta.off,ley:dd.bloque.ley,holes:r.A.holes,nT:r.A.holes.length,m:r.A.metros,kg:r.A.kg,t:r.tonAn,pf:r.pfAn,hueco:r.A.hueco,dil:r.dil,leyDil:r.leyDil,tEst:r.tonEst,R:r});
+    tot.t+=r.tonAn;tot.kg+=r.A.kg;tot.m+=r.A.metros;tot.est+=r.tonEst;tot.au+=r.tonAn*dd.bloque.ley;tot.auD+=(r.tonAn+r.tonEst)*r.leyDil}
+  R.anillos=out;R.totVar={t:tot.t,kg:tot.kg,m:tot.m,est:tot.est,pf:tot.t?tot.kg/tot.t:0,ley:tot.t?tot.au/tot.t:0,leyDil:(tot.t+tot.est)?tot.auD/(tot.t+tot.est):0,dil:(tot.t+tot.est)?tot.est/(tot.t+tot.est)*100:0};
+  var malos=out.filter(function(a){return a.hueco>0.8*d.perf.E||a.pf<R.pfObj*0.6||a.pf>R.pfObj*1.7});
+  R.alertas.push({nivel:malos.length?'aviso':'ok',txt:malos.length?malos.length+' de '+out.length+' anillos fuera de rango (cobertura o factor de potencia): '+malos.slice(0,6).map(function(a){return 'A'+a.n}).join(', ')+(malos.length>6?'…':'')+'.':'Los '+out.length+' anillos del tajo quedan dentro de rango con la veta variable.',acc:'Revisa esos anillos en la tabla y ajusta el espaciamiento donde la veta se ensancha.',k:'var'});
+  R.nAvisos=R.alertas.filter(function(x){return x.nivel!=='ok'}).length;if(R.estado==='conforme'&&malos.length)R.estado='ajuste menor'}
 function costosLH(R){var c=R.d.costos,ex=R.prod,nH=R.A.holes.length*R.nDisp+(R.d.cuna.tipo==='alivio'?R.d.cuna.nCarg:0),m=R.A.metros*R.nDisp+(R.d.cuna.tipo==='alivio'?(R.d.cuna.nCarg+R.d.cuna.nAliv)*R.cuna.L:0);
   var conC=!!R.d.disparo.conCuna&&R.d.cuna.tipo==='alivio';nH=R.A.holes.length*R.nDisp+(conC?R.d.cuna.nCarg:0);m=R.A.metros*R.nDisp+(conC?(R.d.cuna.nCarg+R.d.cuna.nAliv)*R.cuna.L:0);
   var it=[['Explosivos','Explosivo '+ex.nombre,R.kgDisp,'kg',ex.precio],['Iniciación','Detonadores',nH,'pza',c.det],['Iniciación','Boosters / cebos',nH,'pza',c.booster],['Iniciación','Línea de inicio',1,'disparo',c.linea],
@@ -103,7 +119,8 @@ function alertasLH(R){var d=R.d,p=d.perf,a=[];function chk(ok,w,t,acc,k){a.push(
   if(R.M.estado!=='sin datos')chk(R.M.estado==='estable',R.M.estado==='transición','Estabilidad de Mathews: N\' '+R.M.Np.toFixed(1)+', radio hidráulico '+R.M.HR.toFixed(1)+' m → '+R.M.estado+'.','Acorta el tajo o deja pilares.','mathews');
   chk(R.dil<=20,R.dil<=35,'Dilución estimada '+R.dil.toFixed(1)+' % (ELOS alto '+R.elos.hw.toFixed(2)+' m, bajo '+R.elos.fw.toFixed(2)+' m).','Controla la carga en los contactos y la longitud del tajo.','dil');
   R.alertas=a;R.nAvisos=a.filter(function(x){return x.nivel!=='ok'}).length;R.estado=a.some(function(x){return x.nivel==='error'})?'revisar':R.nAvisos?'ajuste menor':'conforme'}
-function hojaSimba(R){var out=[];for(var an=1;an<=R.nDisp;an++)R.A.holes.forEach(function(h,i){out.push({anillo:an,id:h.id,ang:h.ang,len:h.len,taco:h.taco,carg:h.carg,kg:h.kg,ms:((an-1)*R.d.disparo.msAnillo+i*R.d.disparo.msTal)})});return out}
+function hojaSimba(R,todo){var out=[];if(R.anillos){(todo?R.anillos:R.anillos.slice(0,R.nDisp)).forEach(function(a){a.holes.forEach(function(h,i){out.push({anillo:a.n,id:h.id,ang:h.ang,len:h.len,taco:h.taco,carg:h.carg,kg:h.kg,ms:((a.n-1)*R.d.disparo.msAnillo+i*R.d.disparo.msTal)})})});return out}
+  for(var an=1;an<=R.nDisp;an++)R.A.holes.forEach(function(h,i){out.push({anillo:an,id:h.id,ang:h.ang,len:h.len,taco:h.taco,carg:h.carg,kg:h.kg,ms:((an-1)*R.d.disparo.msAnillo+i*R.d.disparo.msTal)})});return out}
 
 var E0=root.SVE||(typeof require!=='undefined'?require('./engine.js'):null);
 var API={defaultsLH:defaultsLH,disenarLH:disenarLH,hojaSimba:hojaSimba,mathews:mathews,anillo:anillo,zona:zona};
