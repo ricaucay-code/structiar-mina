@@ -138,7 +138,13 @@ var BOOT=0,RESCATE=false;try{BOOT=+localStorage.getItem('svp-boot')||0;localStor
 function bootOk(){try{localStorage.setItem('svp-boot','0')}catch(e){}}
 try{var ls=JSON.parse(localStorage.getItem('svp-borrador'));if(ls&&ls.tipo==='larga')D=Object.assign(E.LH.defaultsLH(),ls);else if(ls&&ls.geom)D=Object.assign(E.defaults(),ls)}catch(e){}
 function LHm(){return D.tipo==='larga'}
-function calc(){R=LHm()?E.LH.disenarLH(D):E.disenar(D,S.cat)}
+/* valores a medio escribir (vacío, 0, fuera de rango) se acotan antes de calcular para que el motor nunca reciba datos imposibles */
+function sanear(d){var c=JSON.parse(JSON.stringify(d)),def=LHm()?E.LH.defaultsLH():E.defaults();
+  curSteps().forEach(function(st){st.f.forEach(function(f){if(f[0]!=='num')return;var p=f[1],mi=+f[5],ma=+f[6],v=get(c,p),dv=get(def,p),n=v==null||v===''?NaN:+v;
+    if(!isFinite(n)){set(c,p,dv==null?null:dv);return}if(isFinite(mi)&&n<mi){if(dv==null){set(c,p,null);return}n=mi}if(isFinite(ma)&&n>ma)n=ma;set(c,p,n)})});
+  (c.estaciones||[]).forEach(function(e){['x','w','dip','off','ley'].forEach(function(k){if(e[k]!=null&&!isFinite(+e[k]))e[k]=null});if(+e.w>30)e.w=30;if(+e.dip>90)e.dip=90});
+  (c.estructuras||[]).forEach(function(e){if(!isFinite(+e.dip))e.dip=null;if(!isFinite(+e.dd))e.dd=null});return c}
+function calc(){var c=sanear(D);R=LHm()?E.LH.disenarLH(c):E.disenar(c,S.cat)}
 
 /* ---------- pasos (formulario) ---------- */
 var STEPS=[
