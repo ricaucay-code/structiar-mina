@@ -41,6 +41,8 @@ summary b{font:700 15px var(--f-d);letter-spacing:.03em}summary small{display:bl
 .dot{width:9px;height:9px;border-radius:50%}.dot.ok{background:var(--ok)}.dot.aviso{background:var(--warn)}.dot.error{background:var(--bad)}
 .fields{padding:2px 14px 14px;display:grid;gap:10px}
 .fl{display:grid;grid-template-columns:minmax(0,1fr) 108px;gap:4px 10px;align-items:center}
+.ofl{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:10px 18px;margin-bottom:6px}
+.ofl select{min-width:0}
 .fl>span{font-size:13px}.fl>span em{display:block;font-style:normal;font-size:11.5px;color:var(--mute)}
 .fl .u{position:relative}.fl .u input{padding-right:34px;text-align:right}.fl .u i{position:absolute;right:8px;top:50%;transform:translateY(-50%);font:500 11px var(--f-m);color:var(--mute);font-style:normal}
 .fl .sug{grid-column:1/-1;font-size:12px;color:var(--mute);display:flex;gap:8px;align-items:center}
@@ -101,10 +103,11 @@ td input{min-height:30px;padding:3px 6px;max-width:90px}
     <div class="noprint" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn g sm" data-a="reset">Restablecer valores</button></div>
   </aside>
   <main>
-    <nav class="tabs" id="tabs"><button data-t="diseno" class="on">Diseño</button><button data-t="carga">Carga y costos</button><button data-t="real">Real y calibración</button><button data-t="biblio">Biblioteca</button></nav>
+    <nav class="tabs" id="tabs"><button data-t="diseno" class="on">Diseño</button><button data-t="carga">Carga y costos</button><button data-t="real">Real y calibración</button><button data-t="onda">Onda elemental</button><button data-t="biblio">Biblioteca</button></nav>
     <section id="t-diseno" class="stack"></section>
     <section id="t-carga" class="stack" hidden></section>
     <section id="t-real" class="stack" hidden></section>
+    <section id="t-onda" class="stack" hidden></section>
     <section id="t-biblio" class="stack" hidden></section>
   </main>
 </div>
@@ -114,6 +117,7 @@ td input{min-height:30px;padding:3px 6px;max-width:90px}
 <script src="engine.js"></script>
 <script src="engine-geo.js"></script>
 <script src="engine-lh.js"></script>
+<script src="engine-onda.js"></script>
 <script>
 (function(){'use strict';
 var E=window.SVE,C=window.STRUCTIAR_CFG||{},sb=null;try{sb=supabase.createClient(C.url,C.key,{auth:{persistSession:true,autoRefreshToken:true}})}catch(e){}
@@ -470,9 +474,76 @@ function vCargaLH(){var c=R.costo,grp=null;var hs=E.LH.hojaSimba(R,!!R.anillos);
    hs.map(function(x){return '<tr><td>A'+x.anillo+'</td><td>'+x.id+'</td><td class="n">'+f1(x.ang)+'°</td><td class="n">'+f2(x.len)+'</td><td class="n">'+f2(x.taco)+'</td><td class="n">'+f2(x.carg)+'</td><td class="n">'+f1(x.kg)+'</td><td class="n">'+f0(x.ms)+' ms</td></tr>'}).join('')+'</tbody></table></div></div>';
   h+='<div class="panel"><div class="ph"><h3>Vale de salida del polvorín</h3></div><div class="tbl"><table><thead><tr><th>Material</th><th>Descripción</th><th class="n">Cantidad</th></tr></thead><tbody><tr><td>Explosivo</td><td>'+esc(R.prod.nombre)+' (granel)</td><td class="n">'+f0(R.kgDisp)+' kg</td></tr><tr><td>Iniciación</td><td>Detonadores '+(D.disparo.serie==='ELEC'?'electrónicos':'no eléctricos de periodo largo')+'</td><td class="n">'+c.nH+' u</td></tr><tr><td>Iniciación</td><td>Boosters / cebos</td><td class="n">'+c.nH+' u</td></tr><tr><td>Iniciación</td><td>Línea de inicio</td><td class="n">1 juego</td></tr></tbody></table></div></div>';
   $('#t-carga').innerHTML=h}
-function renderAll(){calc();updSummaries();fillInputs();['diseno','carga','real','biblio'].forEach(function(t){$('#t-'+t).hidden=S.tab!==t});
+/* ---------- onda elemental (signature hole) ---------- */
+var OD={fuente:'sint',sint:{ppv:50,f:100,amort:0.12,dur:0.08},unidad:'mm/s',n:6,dMin:1,dMax:40,paso:0.5,disp:1.5,corridas:40,modo:'pvs',sel:null,ini:null,fin:null,Q0:null,D0:null,Q:null,D:null};
+try{var lo=JSON.parse(localStorage.getItem('svp-onda'));if(lo)OD=Object.assign(OD,lo,{sint:Object.assign({},OD.sint,lo.sint||{})})}catch(e){}
+var OS={raw:null,nombre:'',err:'',sig:null,B:null,esp:null,key:''};
+function ondaGuardar(){try{localStorage.setItem('svp-onda',JSON.stringify(OD))}catch(e){}}
+function ondaCalc(){var W=E.ONDA,key=JSON.stringify([OD.fuente,OD.sint,OD.n,OD.dMin,OD.dMax,OD.paso,OD.disp,OD.corridas,OD.modo,OD.ini,OD.fin,OS.nombre]);if(key===OS.key&&OS.B)return;OS.key=key;
+  var src=OD.fuente==='csv'&&OS.raw?OS.raw:W.sintetica(OD.sint);OS.sig=W.preparar(src,{ini:OD.fuente==='csv'?OD.ini:null,fin:OD.fuente==='csv'?OD.fin:null});
+  OS.esp=W.espectro(OS.sig);OS.B=W.barrido(OS.sig,{n:OD.n,dMin:OD.dMin,dMax:OD.dMax,paso:OD.paso,disp:OD.disp,corridas:OD.corridas,modo:OD.modo})}
+function ofl(p,l,u,st,mi,ma,hint){return '<div class="fl"><span>'+esc(l)+(hint?'<em>'+esc(hint)+'</em>':'')+'</span><span class="u"><input type="number" data-o="'+p+'" step="'+st+'" min="'+mi+'" max="'+ma+'" value="'+esc(getO(p)==null?'':getO(p))+'"><i>'+esc(u)+'</i></span></div>'}
+function osel(p,l,opts){var v=String(getO(p));return '<div class="fl"><span>'+esc(l)+'</span><select data-o="'+p+'">'+opts.map(function(o){return '<option value="'+esc(o[0])+'"'+(String(o[0])===v?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select></div>'}
+function getO(p){return p.split('.').reduce(function(o,k){return o==null?null:o[k]},OD)}
+function setO(p,v){var ks=p.split('.'),o=OD;for(var i=0;i<ks.length-1;i++)o=o[ks[i]];o[ks[ks.length-1]]=v}
+function diezmar(arr,max){if(arr.length<=max)return arr;var st=arr.length/max,out=[];for(var i=0;i<max;i++){var a=Math.floor(i*st),b=Math.floor((i+1)*st),mn=arr[a],mx=arr[a];for(var j=a;j<b;j++){if(arr[j][1]<mn[1])mn=arr[j];if(arr[j][1]>mx[1])mx=arr[j]}out.push(mn[0]<=mx[0]?mn:mx);out.push(mn[0]<=mx[0]?mx:mn)}return out}
+function ticks(a,b,n){var r=b-a,st=Math.pow(10,Math.floor(Math.log10(r/n||1))),m=[1,2,5,10].find(function(k){return r/(st*k)<=n})||10;st*=m;var out=[];for(var v=Math.ceil(a/st)*st;v<=b+1e-9;v+=st)out.push(Math.round(v*1000)/1000);return out}
+var OCOL={T:'var(--accent)',V:'var(--warm)',L:'var(--c-seq)'};
+function ondaChart(sig,title,ref){var ks=Object.keys(sig.comps),n=E.ONDA.largo(sig),tMax=n*sig.dt*1000,ym=0;ks.forEach(function(k){for(var i=0;i<sig.comps[k].length;i++)ym=Math.max(ym,Math.abs(sig.comps[k][i]))});if(ref)ym=Math.max(ym,ref);ym=ym*1.1||1;
+  var series=ks.map(function(k){var x=sig.comps[k],p=[];for(var i=0;i<x.length;i++)p.push([i*sig.dt*1000,x[i]]);return {c:OCOL[k]||'var(--ink)',w:1.4,p:diezmar(p,450)}});
+  return lineChart({title:title,xmin:0,xmax:tMax,ymin:-ym,ymax:ym,xt:ticks(0,tMax,8),yt:ticks(-ym,ym,6),xl:'tiempo (ms)',yl:'mm/s',series:series,hl:ref?[{y:ref,c:'var(--bad)',t:'PPV unitaria '+f1(ref)},{y:-ref,c:'var(--bad)',t:''}]:[]})+
+   '<div class="mute" style="font-size:12px;display:flex;gap:14px;flex-wrap:wrap;margin-top:4px">'+ks.map(function(k){return '<span><i style="display:inline-block;width:14px;height:3px;background:'+OCOL[k]+';vertical-align:middle;margin-right:5px"></i>'+({T:'Transversal',V:'Vertical',L:'Longitudinal'}[k]||k)+'</span>'}).join('')+'</div>'}
+function vOnda(){var W=E.ONDA,h='';try{ondaCalc()}catch(e){OS.err=e.message;OD.fuente='sint';ondaCalc()}
+  var sig=OS.sig,B=OS.B,pk=W.pico(sig),u=B.ppvU,fd=OS.esp.fDom,Tp=fd?1000/fd:null,sel=OD.sel!=null?B.pts.reduce(function(m,p){return Math.abs(p.d-OD.sel)<Math.abs(m.d-OD.sel)?p:m},B.pts[0]):B.mejor,LH=LHm();
+  var esp=LH?+D.perf.E:+D.malla.E,win=[3*esp,15*esp],enW=B.pts.filter(function(p){return p.d>=win[0]-1e-9&&p.d<=win[1]+1e-9}),rec=(function(L){if(!L.length)return B.mejor;var mn=Math.min.apply(null,L.map(function(p){return p.p95}));return L.filter(function(p){return p.p95<=mn*1.1}).sort(function(a,b){return a.d-b.d})[0]})(enW);
+  if(OD.sel==null)sel=rec;
+  var lim=D.vibr?+D.vibr.lim:100,beta=D.vibr?+D.vibr.beta:1.6,okEsc=+OD.Q0>0&&+OD.D0>0&&+OD.Q>0&&+OD.D>0,fe=okEsc?W.escala({Q0:OD.Q0,D0:OD.D0,Q:OD.Q,D:OD.D,beta:beta}):1,pred=sel.p95*u*fe;
+  var modoTxt={pvs:'suma vectorial (PVS)',T:'transversal',V:'vertical',L:'longitudinal',max:'componente mayor'}[B.modo];
+  h+='<div class="kpis"><div class="kpi a"><div class="l">PPV unitaria · un taladro</div><div class="v">'+f1(u)+'<small>mm/s</small></div><div class="s">'+esc(modoTxt)+' · componente mayor '+f1(pk.max)+'</div></div>'+
+   '<div class="kpi b"><div class="l">Frecuencia dominante</div><div class="v">'+f0(fd)+'<small>Hz</small></div><div class="s">período '+(Tp?f1(Tp)+' ms':'—')+' · '+esc(({T:'transversal',V:'vertical',L:'longitudinal'})[OS.esp.comp]||OS.esp.comp)+'</div></div>'+
+   '<div class="kpi"><div class="l">Retardo recomendado</div><div class="v">'+f1(rec.d)+'<small>ms</small></div><div class="s">P95 '+f2(rec.p95)+'× con '+B.n+' taladros'+(enW.length?' · ventana '+f0(win[0])+'–'+f0(win[1])+' ms':' · fuera de la ventana práctica')+'</div></div>'+
+   '<div class="kpi"><div class="l">Retardo evaluado · '+f1(sel.d)+' ms</div><div class="v">'+f2(sel.p95)+'<small>×</small></div><div class="s">nominal '+f2(sel.a)+' · PPV '+f0(sel.p95*u*fe)+' mm/s'+(okEsc?' (escalada)':'')+'</div></div></div>';
+  h+='<div class="panel"><div class="ph"><h3>Señal de un taladro (onda elemental)</h3><span class="r seg">'+[['sint','Sintética'],['csv','Sismógrafo (CSV)']].map(function(o){return '<button type="button" data-a="oFuente" data-v="'+o[0]+'" class="'+(OD.fuente===o[0]?'on':'')+'">'+o[1]+'</button>'}).join('')+'</span></div>'+
+   (OS.err?'<div class="banner warn" style="margin-bottom:10px">'+esc(OS.err)+'</div>':'')+
+   (OD.fuente==='csv'?'<div class="ofl"><div class="fl" style="grid-template-columns:1fr"><span>Archivo del sismógrafo<em>Exporta la forma de onda de un taladro aislado (tiempo + transversal, vertical, longitudinal). CSV o TXT.</em></span><input type="file" id="oFile" accept=".csv,.txt,text/csv,text/plain"></div>'+
+     osel('unidad','Unidades del archivo',[['mm/s','mm/s'],['in/s','in/s'],['cm/s','cm/s'],['m/s','m/s']])+ofl('ini','Inicio de ventana','ms',1,0,100000,'Vacío = automático')+ofl('fin','Fin de ventana','ms',1,0,100000,'Vacío = automático')+'</div>'+
+     '<p class="note">'+(OS.raw?'Cargado: <b>'+esc(OS.nombre)+'</b> · '+f0(1/OS.raw.dt)+' muestras/s · '+Object.keys(OS.raw.comps).length+' componentes · ventana '+f0(sig.ini)+' a '+f0(sig.fin)+' ms.':'Sin archivo: se usa la señal sintética hasta que cargues uno. El archivo no sale de tu equipo.')+'</p>'
+    :'<div class="ofl">'+ofl('sint.ppv','PPV del taladro','mm/s',1,1,5000)+ofl('sint.f','Frecuencia dominante','Hz',1,5,1000)+ofl('sint.amort','Amortiguamiento','ζ',0.01,0.02,0.6,'0,05 roca competente · 0,3 roca fracturada')+ofl('sint.dur','Duración','s',0.01,0.01,1)+'</div><p class="note">Señal de referencia para explorar. Para decidir retardos usa la onda real de un taladro medida en tu mina.</p>')+
+   '<div class="g2" style="margin-top:8px"><div>'+ondaChart(sig,'Onda elemental',null)+'</div><div>'+
+   lineChart({title:'Espectro',xmin:0,xmax:Math.min(500,Math.max(100,fd*3)),ymin:0,ymax:1.05,xt:ticks(0,Math.min(500,Math.max(100,fd*3)),6),yt:[0,0.5,1],xl:'frecuencia (Hz)',yl:'amplitud relativa',series:[{c:'var(--accent)',w:1.8,p:OS.esp.f.map(function(f,i){return [f,OS.esp.a[i]]}).filter(function(p){return p[0]<=Math.min(500,Math.max(100,fd*3))})}],pts:fd?[[fd,1,'var(--warm)',4]]:[]})+
+   '<p class="note">Una señal de voladura subterránea cercana suele tener 50 a 300 Hz. Un pico muy alto o una onda que llega desde el lado contrario indica ruido, no un taladro.</p></div></div></div>';
+  h+='<div class="panel"><div class="ph"><h3>Barrido de retardos entre taladros</h3><button class="r btn g sm" data-a="oCsv">Exportar CSV</button></div><div class="ofl">'+
+   ofl('n','Taladros por secuencia','',1,2,60)+ofl('dMin','Retardo mínimo','ms',0.5,0.5,500)+ofl('dMax','Retardo máximo','ms',1,2,1000)+ofl('paso','Paso','ms',0.1,0.1,10)+
+   ofl('disp','Dispersión del detonador (1σ)','%',0.1,0,10,'Electrónico 0,1 · pirotécnico 1 a 3')+osel('modo','Comparar con',[['pvs','Suma vectorial (PVS)'],['max','Componente mayor'],['T','Transversal'],['V','Vertical'],['L','Longitudinal']])+'</div>';
+  var yM=Math.max(2,Math.ceil(Math.max.apply(null,B.pts.map(function(p){return p.p95}))+0.2)),vl=[];if(Tp)for(var k=1;k*Tp<=OD.dMax;k++)if(k*Tp>=OD.dMin)vl.push({c:'var(--bad)',w:1,dash:true,p:[[k*Tp,0],[k*Tp,yM]]});win.forEach(function(x){if(x>=OD.dMin&&x<=OD.dMax)vl.push({c:'var(--ok)',w:2,p:[[x,0],[x,yM]]})});
+  h+='<div style="max-width:760px;margin:0 auto">'+lineChart({title:'Amplificación contra retardo',xmin:OD.dMin,xmax:OD.dMax,ymin:0,ymax:yM,xt:ticks(OD.dMin,OD.dMax,8),yt:ticks(0,yM,5),xl:'retardo entre taladros (ms)',yl:'amplificación (×)',
+    series:vl.concat([{c:'var(--line)',w:1.5,p:B.pts.map(function(p){return [p.d,p.a]})},{c:'var(--warm)',w:2.4,p:B.pts.map(function(p){return [p.d,p.p95]})}]),hl:[{y:1,c:'var(--ok)',t:'sin amplificación'}],pts:[[rec.d,rec.p95,'var(--ok)',6],[sel.d,sel.p95,'var(--accent)',5]]})+'</div>'+
+   '<div class="mute" style="font-size:12px;display:flex;gap:14px;flex-wrap:wrap"><span><i style="display:inline-block;width:14px;height:3px;background:var(--warm);vertical-align:middle;margin-right:5px"></i>P95 con dispersión</span><span><i style="display:inline-block;width:14px;height:3px;background:var(--line);vertical-align:middle;margin-right:5px"></i>nominal</span><span><i style="display:inline-block;width:14px;border-top:2px dashed var(--bad);vertical-align:middle;margin-right:5px"></i>múltiplos del período (interferencia constructiva)</span><span><i style="display:inline-block;width:14px;border-top:2px solid var(--ok);vertical-align:middle;margin-right:5px"></i>ventana práctica</span></div>'+
+   '<p class="note">Cada punto suma '+B.n+' copias de la onda elemental desplazadas por el retardo'+(B.disp?' y, con '+f1(B.disp)+' % de dispersión, repite la suma '+OD.corridas+' veces para obtener el P95':'')+'. Amplificación = PPV resultante / PPV unitaria. El recomendado es el retardo más corto de la ventana cuyo P95 queda a menos de 10 % del mínimo. Evita los retardos cercanos a múltiplos del período ('+(Tp?f1(Tp)+' ms':'—')+'): ahí las ondas se suman en fase. Ventana práctica entre taladros de una misma fila: 3 a 15 ms por metro de espaciamiento (Konya); con '+f2(esp)+' m: '+f0(win[0])+' a '+f0(win[1])+' ms. '+(B.mejor.d<win[0]?'El mínimo absoluto ('+f1(B.mejor.d)+' ms, '+f2(B.mejor.p95)+'×) es demasiado corto para que la roca se desplace.':'')+'</p></div>';
+  OS.rec=rec;var tn=[];for(var i=0;i<B.n;i++)tn.push(i*sel.d);var sup=W.superponer(sig,tn);
+  h+='<div class="g2"><div class="panel"><div class="ph"><h3>Señal resultante a '+f1(sel.d)+' ms</h3><span class="r pill '+(sel.p95<=1.3?'ok':sel.p95<=2?'aviso':'error')+'">'+f2(sel.a)+'× nominal</span></div>'+ondaChart(sup,'Señal resultante',u)+
+   '<p class="note">Superposición nominal de '+B.n+' taladros. La línea roja es la PPV de un solo taladro.</p></div>'+
+   '<div class="panel"><div class="ph"><h3>Mejores retardos</h3><small class="mute">'+(enW.length?'dentro de la ventana práctica':'en todo el barrido')+'</small></div><div class="tbl"><table><thead><tr><th>Retardo</th><th class="n">Nominal</th><th class="n">P50</th><th class="n">P95</th><th class="n">PPV P95</th></tr></thead><tbody>'+
+   (function(){var tp=(enW.length?enW:B.pts).filter(function(p){return p!==rec}).sort(function(a,b){return a.p95-b.p95||a.d-b.d}).slice(0,4);return [rec].concat(tp,[B.peor])})().map(function(p,i,arr){return '<tr data-a="oSel" data-v="'+p.d+'" style="cursor:pointer'+(p.d===sel.d?';background:var(--accent-soft)':'')+'"><td>'+(i===0?'<span class="pill ok">recomendado</span> ':'')+(i===arr.length-1?'<span class="pill error">evitar</span> ':'')+f1(p.d)+' ms</td><td class="n">'+f2(p.a)+'</td><td class="n">'+f2(p.p50)+'</td><td class="n">'+f2(p.p95)+'</td><td class="n">'+f0(p.p95*u*fe)+'</td></tr>'}).join('')+'</tbody></table></div>'+
+   '<div class="ofl" style="margin-top:8px">'+ofl('sel','Evaluar retardo','ms',0.5,0.5,1000,'Toca una fila o escribe un valor')+'</div></div></div>';
+  h+='<div class="panel"><div class="ph"><h3>Llevarlo a tu diseño</h3></div><div class="ofl">'+ofl('Q0','Carga del taladro medido','kg',0.5,0.1,5000)+ofl('D0','Distancia del taladro medido','m',1,1,5000)+ofl('Q','Carga por taladro del diseño','kg',0.5,0.1,5000)+ofl('D','Distancia al punto a proteger','m',1,1,5000)+'</div>'+
+   '<p class="note">'+(okEsc?'Escala por distancia escalada: (D/√Q ÷ D₀/√Q₀)^−β con β '+f2(beta)+' del diseño → factor '+f2(fe)+'. PPV esperada a '+f1(sel.d)+' ms: <b>'+f0(pred)+' mm/s</b> contra límite '+f0(lim)+' mm/s.':'Completa carga y distancia del taladro medido y del diseño para predecir la PPV en el punto a proteger con β '+f2(beta)+' del diseño.')+'</p>'+
+   (okEsc?'<div class="banner '+(pred<=lim?'info':'warn')+'" style="margin:8px 0">'+(pred<=lim?'Dentro del límite con '+f0((1-pred/lim)*100)+' % de margen.':'Supera el límite: usa '+f1(rec.d)+' ms, reduce la carga por taladro o separa la secuencia.')+'</div>':'')+
+   (LH?'<button class="btn" data-a="oUsar">Usar '+f1(sel.d)+' ms entre taladros del anillo</button> <span class="mute" style="font-size:12px">hoy: '+f1(D.disparo.msTal)+' ms</span>':'<p class="note">En desarrollos con serie MS, elige números de retardo cuya separación quede lejos de los múltiplos del período. Con detonadores electrónicos programa '+f1(rec.d)+' ms entre taladros del mismo grupo.</p>')+'</div>';
+  var ae=document.activeElement,fk=ae&&ae.dataset&&ae.dataset.o;$('#t-onda').innerHTML=h;if(fk){var ne=document.querySelector('#t-onda [data-o="'+fk+'"]');if(ne&&ne.type!=='file')ne.focus()}}
+function ondaCambio(){ondaGuardar();clearTimeout(ondaCambio.t);ondaCambio.t=setTimeout(function(){if(S.tab==='onda')vOnda()},250)}
+document.addEventListener('input',function(e){var el=e.target;if(!el.dataset||!el.dataset.o)return;var v=el.type==='number'?(el.value===''?null:+el.value):el.value;setO(el.dataset.o,v);if(el.dataset.o==='unidad'&&OS.txt){try{OS.raw=E.ONDA.parseCSV(OS.txt,OD.unidad);OS.key=''}catch(er){OS.err=er.message}}if(el.tagName==='SELECT'||el.dataset.o==='sel'){ondaGuardar();if(el.dataset.o==='sel'){clearTimeout(ondaCambio.t);ondaCambio.t=setTimeout(vOnda,350)}else vOnda()}else ondaCambio()});
+document.addEventListener('change',function(e){var el=e.target;if(el.id!=='oFile'||!el.files||!el.files[0])return;var f=el.files[0];if(f.size>25e6){OS.err='El archivo supera 25 MB.';vOnda();return}
+  var rd=new FileReader();rd.onload=function(){try{OS.txt=String(rd.result);OS.raw=E.ONDA.parseCSV(OS.txt,OD.unidad);OS.nombre=f.name;OS.err='';OD.ini=null;OD.fin=null;OS.key='';OD.fuente='csv';ondaGuardar();toast('Señal cargada: '+f.name)}catch(er){OS.err='No se pudo leer '+f.name+': '+er.message}vOnda()};rd.readAsText(f)});
+document.addEventListener('click',function(e){var a=e.target.closest('[data-a]');if(!a||!a.dataset.a||a.dataset.a.charAt(0)!=='o'||!document.getElementById('t-onda').contains(a))return;var act=a.dataset.a;
+  if(act==='oFuente'){OD.fuente=a.dataset.v;OS.err='';ondaGuardar();vOnda()}
+  else if(act==='oSel'){OD.sel=+a.dataset.v;ondaGuardar();vOnda()}
+  else if(act==='oCsv'){var B=OS.B,rows=[['retardo_ms','amplificacion_nominal','amplificacion_p50','amplificacion_p95','ppv_p95_mm_s']];B.pts.forEach(function(p){rows.push([p.d,p.a.toFixed(3),p.p50.toFixed(3),p.p95.toFixed(3),(p.p95*B.ppvU).toFixed(1)])});dlText('onda-elemental-barrido.csv',rows.map(function(r){return r.join(',')}).join('\n'))}
+  else if(act==='oUsar'&&LHm()){var d=OD.sel!=null?OD.sel:(OS.rec||OS.B.mejor).d;D.disparo.msTal=Math.round(d*10)/10;changed();toast('Retardo entre taladros del anillo: '+f1(D.disparo.msTal)+' ms')}});
+
+function renderAll(){calc();updSummaries();fillInputs();['diseno','carga','real','onda','biblio'].forEach(function(t){$('#t-'+t).hidden=S.tab!==t});
   document.querySelectorAll('#tabs button').forEach(function(b){b.classList.toggle('on',b.dataset.t===S.tab)});
-  if(S.tab==='diseno')(LHm()?vDisenoLH:vDiseno)();else if(S.tab==='carga')(LHm()?vCargaLH:vCarga)();else if(S.tab==='real')vReal();else vBiblio();
+  if(S.tab==='diseno')(LHm()?vDisenoLH:vDiseno)();else if(S.tab==='carga')(LHm()?vCargaLH:vCarga)();else if(S.tab==='real')vReal();else if(S.tab==='onda')vOnda();else vBiblio();
   $('#saveSt').textContent=S.dirty?'Cambios sin guardar':(S.id?'Guardado':'');var ban='';
   if(!S.pro)ban='<div class="banner warn">Estás viendo Voladura Pro sin el plan Pro activo: puedes calcular, pero no guardar diseños ni lecturas. <a class="btn sm" href="../">Volver a la app</a></div>';
   $('#ban').innerHTML=ban;$('#bGuardar').disabled=!S.pro||!(S.rol==='admin'||S.rol==='colaborador')}
