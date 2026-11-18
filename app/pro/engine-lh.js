@@ -7,7 +7,7 @@ function clamp(x,a,b){return Math.max(a,Math.min(b,x))}
 function defaultsLH(){return {tipo:'larga',nombre:'',labor:'',frente:'',responsable:'',
   bloque:{H:15,largo:30,ley:5,densMin:2.8,densEst:2.7,recup:95},
   galInf:{W:3.5,H:3.5},galSup:{W:3.5,H:3.5},
-  veta:{w:3,dip:75,rmr:55,q:4,A:0.8,B:0.5,C:5.5,off:0,c:null,auto:false},
+  veta:{w:3,dip:75,rmr:55,q:4,A:0.8,B:0.5,C:5.5,off:0,c:null,cModo:'auto',ucs:100,auto:false},
   rumbo:0,estructuras:[],estaciones:[],
   perf:{modo:'asc',d:76,B:1.8,E:2.2,taco:1.5,stagger:1.0,dev:1.0,tacoMin:1.0},
   cuna:{tipo:'alivio',nAliv:3,dAliv:152,nCarg:8,dCarg:76},
@@ -62,10 +62,10 @@ function GEOf(){return (typeof root!=='undefined'&&root.SVE&&root.SVE.GEO)||(typ
 
 /* ---------- diseño completo ---------- */
 function disenarLH(d){d=JSON.parse(JSON.stringify(d));var b=d.bloque,v=d.veta,p=d.perf,ex=E0.CATALOGO.filter(function(x){return x.id===d.exp.id})[0]||E0.CATALOGO[0];
-  var A=anillo(d),Z=A.Z,M=mathews(d),kr=E0.kRoca({rmr:v.rmr,ucs:100,estructura:'moderada'});
+  var A=anillo(d),Z=A.Z,M=mathews(d),kr=E0.kRoca({rmr:v.rmr,ucs:+v.ucs||100,estructura:'moderada'});
   var tonAn=Z.area*p.B*b.densMin,nAn=Math.max(1,Math.floor(b.largo/p.B)),nDisp=Math.max(1,d.disparo.anillos);
   // burden sugerido (Langefors sobre carga de la columna)
-  var cU=+v.c>0?+v.c:null,cL=cU!=null?cU:0.4/(kr*kr),cbar=cL+0.05,Lmx=A.holes.reduce(function(m,h){return Math.max(m,h.len)},0),fA=0.85;
+  var G1=GEOf(),CR=G1?G1.cRoca({modo:v.cModo,c:v.c,q:v.q,ucs:v.ucs,kr:kr}):{modo:'auto',c:0.4/(kr*kr),cbar:0.4/(kr*kr)+0.05,txt:''},cU=CR.modo!=='auto'?1:null,cL=CR.c,cbar=CR.cbar,Lmx=A.holes.reduce(function(m,h){return Math.max(m,h.len)},0),fA=0.85;
   var BmaxL=(p.d/33)*Math.sqrt((ex.rho*ex.rws/100)/(cbar*1.0*(p.E/p.B))),errP=0.05+p.dev/100*Lmx,Bsug=Math.max(0.8,fA*BmaxL-errP);
   // cuña (cara libre inicial): alivio + cargados alrededor, con desviación al fondo
   var C=d.cuna,phi=(C.tipo==='alivio'?C.dAliv/1000*Math.sqrt(Math.max(1,C.nAliv)):0),Lc=Z.banco+0.5,dev=Lc*p.dev/100;
@@ -83,7 +83,7 @@ function disenarLH(d){d=JSON.parse(JSON.stringify(d));var b=d.bloque,v=d.veta,p=
   var tonEst=tonAn*(hwT+fwT)/v.w*(b.densEst/b.densMin),leyDil=b.ley*v.w/(v.w+hwT+fwT)*(b.densMin/((v.w*b.densMin+(hwT+fwT)*b.densEst)/(v.w+hwT+fwT)));
   // esponjamiento: el vacío disponible debe recibir el esponjamiento del disparo
   var esp=1.45,volDisp=Z.area*p.B*nDisp,vacio=(conC?vacioCuna:0)+Z.area*Math.max(0,+d.disparo.slot||0),necesita=volDisp*(esp-1);
-  var R={c:cL,cbar:cbar,cUser:cU!=null,BmaxL:BmaxL,errP:errP,fA:fA,tipo:'larga',d:d,prod:ex,A:A,Z:Z,M:M,kr:kr,Bsug:Bsug,tonAn:tonAn,nAn:nAn,nDisp:nDisp,kgDisp:kgDisp,tonDisp:tonDisp,pfAn:pfAn,pfDisp:tonDisp?kgDisp/tonDisp:0,
+  var R={cR:CR,c:cL,cbar:cbar,cUser:cU!=null,BmaxL:BmaxL,errP:errP,fA:fA,tipo:'larga',d:d,prod:ex,A:A,Z:Z,M:M,kr:kr,Bsug:Bsug,tonAn:tonAn,nAn:nAn,nDisp:nDisp,kgDisp:kgDisp,tonDisp:tonDisp,pfAn:pfAn,pfDisp:tonDisp?kgDisp/tonDisp:0,
     cuna:{phi:phi,B1:B1,dev:dev,ratio:ratioFondo,kg:kgC,L:Lc,vacio:vacioCuna,n:C.nCarg},kgRet:kgRet,ppv:ppv,qAdm:qAdm,distMin:Math.sqrt(kgRet)*Math.pow(d.vibr.lim/d.vibr.K,-1/d.vibr.beta),
     elos:{hw:hwT,fw:fwT,voladura:elosV},dil:dil,tonEst:tonEst*nDisp,leyDil:leyDil,minBloque:Z.area*b.largo*b.densMin,
     esp:{factor:esp,vacio:vacio,necesita:necesita,ok:vacio>=necesita}};

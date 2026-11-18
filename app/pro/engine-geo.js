@@ -26,7 +26,20 @@ function analizarLabor(fams,rumbo){return (fams||[]).filter(valida).map(function
 /* análisis para un tajo: superficie = caja techo (buzamiento de veta, dirección de buzamiento = rumbo + 90) */
 function analizarTajo(fams,rumbo,dipVeta){var hw={dip:dipVeta,dd:norm360(rumbo+90)};var out=(fams||[]).filter(valida).map(function(f,i){var ang=anguloPlanos(f,hw);return {i:i,nombre:f.nombre||('J'+(i+1)),dip:f.dip,dd:f.dd,ang:ang,B:factorB(ang)}});
   var crit=out.slice().sort(function(a,b){return a.B-b.B})[0]||null;var C=factorC(dipVeta,crit?crit.dip:null);return {fams:out,crit:crit,B:crit?crit.B:null,C:C.C,modoC:C.modo,hw:hw}}
+/* constante de roca de Langefors.
+   modo 'auto': c = 0,4/Kr² ; 'manual': c del usuario ; 'qrcs': fórmula empírica con Q de Barton y RCS
+   c̄ = 0,1257·e^(0,0109·Q) + 0,11·ln(RCS)  (entrega directamente la c corregida, c̄ = c + 0,05) */
+function cRoca(o){var m=o.modo==='qrcs'?'qrcs':(+o.c>0?'manual':'auto'),c,cb,txt;
+  if(m==='qrcs'&&+o.q>0&&+o.ucs>0){cb=0.1257*Math.exp(0.0109*o.q)+0.11*Math.log(o.ucs);c=cb-0.05;txt='c̄ = 0,1257·e^(0,0109·Q) + 0,11·ln(RCS) con Q '+fmt(o.q)+' y RCS '+fmt(o.ucs)+' MPa'}
+  else if(m==='manual'&&+o.c>0){c=+o.c;cb=c+0.05;txt='c = '+fmt(c)+' (tu constante), c̄ = c + 0,05'}
+  else{m='auto';c=0.4/(o.kr*o.kr);cb=c+0.05;txt='c = 0,4/Kr² con Kr '+fmt(o.kr)+', c̄ = c + 0,05'}
+  return {modo:m,c:c,cbar:cb,txt:txt}}
+function fmt(x){return (Math.round(x*100)/100).toString().replace('.',',')}
+/* velocidad crítica de partícula (Persson / McKenzie): PPVc = σt·Vp/E ; Vp de Barton: 3500 + 1000·log10(Q) */
+function ppvCritica(o){var vp=+o.vp>0?+o.vp:(+o.q>0?3500+1000*Math.log10(+o.q):null);if(!vp)return null;
+  var ucs=+o.ucs||80,st=+o.st>0?+o.st:ucs/10,ei=+o.ei>0?+o.ei:0.4*ucs,pc=st*vp/ei;
+  return {vp:vp,vpMedida:+o.vp>0,st:st,stEst:!(+o.st>0),ei:ei,eiEst:!(+o.ei>0),ppvc:pc,zonas:[{n:'Dilatación de fracturas',f:0.25,v:pc/4},{n:'Nuevas fracturas',f:1,v:pc},{n:'Daño notorio',f:4,v:4*pc},{n:'Trituración',f:8,v:8*pc}]}}
 function valida(f){return f&&isFinite(+f.dip)&&isFinite(+f.dd)&&+f.dip>=0&&+f.dip<=90}
-var API={normal:normal,anguloPlanos:anguloPlanos,proy:proy,polo:polo,circuloMayor:circuloMayor,factorB:factorB,factorC:factorC,analizarLabor:analizarLabor,analizarTajo:analizarTajo,valida:valida};
+var API={normal:normal,anguloPlanos:anguloPlanos,proy:proy,polo:polo,circuloMayor:circuloMayor,factorB:factorB,factorC:factorC,analizarLabor:analizarLabor,analizarTajo:analizarTajo,valida:valida,cRoca:cRoca,ppvCritica:ppvCritica};
 if(typeof module!=='undefined'&&module.exports)module.exports=API;else{root.SVE=root.SVE||{};root.SVE.GEO=API}
 })(this);

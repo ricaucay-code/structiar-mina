@@ -35,7 +35,7 @@ function defaults(){return {
  malla:{d:38,B:0.8,E:0.9,taco:0.5,acopl:0.9,contornoPct:50,zapTaco:0.3},
  corte:{tipo:'quemado2',nAliv:2,dAliv:64,dx:0,y:null},
  sequia:'no',
- roca:{rmr:55,ucs:100,estructura:'moderada',dens:2.7,agua:'seco',c:null},
+ roca:{rmr:55,ucs:100,estructura:'moderada',dens:2.7,agua:'seco',c:null,cModo:'auto',q:null,st:null,ei:null,vp:null},
  estructuras:[],
  exp:{id:'emul-cart',fondo:null},
  tiempos:{serie:'MS',disp:3},
@@ -65,6 +65,7 @@ function contorno(g,esp,m){var r=g.W/2,pts=[];
 function kRoca(roca){var rmr=clamp(+roca.rmr||50,10,95),ucs=clamp(+roca.ucs||80,5,300);
   var e={masiva:1.08,moderada:1.0,fracturada:0.9,muy:0.82}[roca.estructura]||1;
   var kr=clamp((0.75+0.005*rmr)*Math.pow(100/ucs,0.08)*e,0.6,1.3);return kr}
+function GEOf(){return (typeof root!=='undefined'&&root.SVE&&root.SVE.GEO)||(typeof require!=='undefined'?(function(){try{return require('./engine-geo.js')}catch(e){return null}})():null)}
 function umbralDano(rmr){return rmr>=70?1200:rmr>=55?900:rmr>=40?700:500}
 function factorA(roca){var rmr=+roca.rmr||50,ucs=+roca.ucs||80;return clamp(0.06*(20+(rmr<40?10:rmr<60?30:50)+ucs/5*0.2*25/5+ (roca.estructura==='masiva'?50:roca.estructura==='moderada'?25:10)),3,16)}
 
@@ -96,7 +97,7 @@ function disenar(d,cat){d=JSON.parse(JSON.stringify(d));var g=d.geom,ml=d.malla,
   var A=area(g),av=g.L*g.eff/100,vol=A*av,ton=vol*ro.dens,kr=kRoca(ro),dm=ml.d/1000;
   var q=cargaLineal(ml.d,ml.acopl,ex.rho);
   // burden sugerido (Langefors simplificado, corregido por roca)
-  var s=ex.rws/100,f=1.45,EB=(ml.E/ml.B)||1.25,cU=+ro.c>0?+ro.c:null,c=cU!=null?cU:0.4/(kr*kr),cbar=c+0.05;
+  var s=ex.rws/100,f=1.45,EB=(ml.E/ml.B)||1.25,G0=GEOf(),CR=G0?G0.cRoca({modo:ro.cModo,c:ro.c,q:ro.q,ucs:ro.ucs,kr:kr}):{modo:'auto',c:0.4/(kr*kr),cbar:0.4/(kr*kr)+0.05,txt:''},cU=CR.modo!=='auto'?1:null,c=CR.c,cbar=CR.cbar;
   var Bmax=0.9*Math.sqrt(q*s/(cbar*f*EB)),errP=0.05+0.03*g.L,Bsug=Math.max(0.3,Bmax-errP);
   var cy=(d.corte.y==null?Math.min(g.H*0.42,g.H-g.W/2+0.2):d.corte.y),cx=d.corte.dx||0;
   var C=generarCorte(d,cx,cy),holes=C.holes.slice();
@@ -139,7 +140,7 @@ function disenar(d,cat){d=JSON.parse(JSON.stringify(d));var g=d.geom,ml=d.malla,
   // kg por periodo
   var porP={};cargados.forEach(function(h){porP[h.p]=porP[h.p]||{p:h.p,ms:h.ms,n:0,kg:0,grupos:{}};porP[h.p].n++;porP[h.p].kg+=h.kg;porP[h.p].grupos[h.g]=1});
   var periodos=Object.keys(porP).map(function(k){var o=porP[k];o.grupo=Object.keys(o.grupos).join(' + ');delete o.grupos;return o}).sort(function(a,b){return a.p-b.p});
-  var res={c:c,cbar:cbar,cUser:cU!=null,Bmax:Bmax,errP:errP,f:f,d:d,prod:ex,A:A,perim:perimetro(g),av:av,vol:vol,ton:ton,kr:kr,q:q,Bsug:Bsug,corte:C,phiEq:corteAvance(d.corte.dAliv,d.corte.nAliv).phiEq,
+  var res={cR:CR,c:c,cbar:cbar,cUser:cU!=null,Bmax:Bmax,errP:errP,f:f,d:d,prod:ex,A:A,perim:perimetro(g),av:av,vol:vol,ton:ton,kr:kr,q:q,Bsug:Bsug,corte:C,phiEq:corteAvance(d.corte.dAliv,d.corte.nAliv).phiEq,
     Lmax:corteAvance(d.corte.dAliv,d.corte.nAliv).Lmax,holes:holes,nCarg:cargados.length,nAl:nAl,kg:kg,fc:vol?kg/vol:0,pf:ton?kg/ton:0,
     perfM:holes.length*g.L,periodos:periodos,cy:cy,cx:cx};
   res.fcObj=(14/A+0.8)/(kr*kr);res.energia=kg*3.7*ex.rws/100;
@@ -163,11 +164,12 @@ function analizar(R){var d=R.d,v=d.vibr,ml=d.malla,g=d.geom;
   R.ppv=ppv(v.K,v.beta,v.dist,kr.nom);R.ppv95=ppv(v.K,v.beta,v.dist,kr.p95);R.qAdm=qAdm(v.K,v.beta,v.dist,v.lim);
   R.distMin=Math.sqrt(kr.nom)*Math.pow(v.lim/v.K,-1/v.beta);
   // daño Holmberg–Persson en contorno: radio donde PPV = umbral de rotura
-  var um=umbralDano(d.roca.rmr),rot=um*3,Khp=700,al=0.7,qc=R.q*ml.contornoPct/100,Hc=Math.max(0.3,g.L-ml.taco);
+  var GEO=GEOf(),PC=GEO?GEO.ppvCritica(d.roca):null;R.ppvc=PC;
+  var um=PC?PC.ppvc:umbralDano(d.roca.rmr),rot=PC?4*PC.ppvc:um*3,Khp=700,al=0.7,qc=R.q*ml.contornoPct/100,Hc=Math.max(0.3,g.L-ml.taco);
   function hp(r){return Khp*Math.pow(qc/r*2*Math.atan(Hc/(2*r)),al)}
   var lo=0.01,hi=3;for(var i=0;i<50;i++){var mid=(lo+hi)/2;if(hp(mid)>rot)lo=mid;else hi=mid}
-  var rRot=lo,margen=0.15;R.dano={umbral:um,rotura:rot,rRot:rRot,sobre:Math.max(0,rRot-margen),sobreMax:Math.max(0,rRot*1.8-margen)};
-  var GEO=(typeof root!=='undefined'&&root.SVE&&root.SVE.GEO)||(typeof require!=='undefined'?(function(){try{return require('./engine-geo.js')}catch(e){return null}})():null);
+  var rRot=lo,margen=0.15,l2=0.01,h2=6;for(var j=0;j<50;j++){var m2=(l2+h2)/2;if(hp(m2)>um)l2=m2;else h2=m2}
+  R.dano={umbral:um,rotura:rot,rRot:rRot,rDano:l2,sobre:Math.max(0,rRot-margen),sobreMax:Math.max(0,rRot*1.8-margen)};
   R.estr=GEO?GEO.analizarLabor(d.estructuras,+g.rumbo||0):[];var fx=R.estr.reduce(function(m,x){return Math.max(m,x.factor)},1);
   R.dano.factorEstr=fx;R.dano.sobre=R.dano.sobre*fx+(fx>1?0.03:0);R.dano.sobreMax=R.dano.sobreMax*fx;
   R.dano.vol=R.dano.sobre*R.perim*R.av;
