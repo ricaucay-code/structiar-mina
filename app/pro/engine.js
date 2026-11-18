@@ -93,32 +93,38 @@ function generarCorte(d,cx,cy){var c=d.corte,phi=corteAvance(c.dAliv,c.nAliv).ph
   return {holes:h,B1:B1,B2:B2,secciones:B2?2:1}}
 
 /* ---------- diseño completo ---------- */
+function num(v,def,a,b){v=+v;return clamp(isFinite(v)&&v!==0?v:def,a,b)}
 function disenar(d,cat){d=JSON.parse(JSON.stringify(d));var g=d.geom,ml=d.malla,ro=d.roca,ex=prod(d.exp.id,cat);
+  g.W=num(g.W,3,1,20);g.H=num(g.H,3,1,20);g.L=num(g.L,2.4,0.3,8);g.eff=num(g.eff,90,10,100);ml.d=num(ml.d,38,20,200);ml.B=num(ml.B,0.8,0.2,5);ml.E=num(ml.E,0.9,0.2,6);ml.acopl=num(ml.acopl,0.9,0.3,1);
   var A=area(g),av=g.L*g.eff/100,vol=A*av,ton=vol*ro.dens,kr=kRoca(ro),dm=ml.d/1000;
   var q=cargaLineal(ml.d,ml.acopl,ex.rho);
   // burden sugerido (Langefors simplificado, corregido por roca)
-  var s=ex.rws/100,f=1.45,EB=(ml.E/ml.B)||1.25,G0=GEOf(),CR=G0?G0.cRoca({modo:ro.cModo,c:ro.c,q:ro.q,ucs:ro.ucs,kr:kr}):{modo:'auto',c:0.4/(kr*kr),cbar:0.4/(kr*kr)+0.05,txt:''},cU=CR.modo!=='auto'?1:null,c=CR.c,cbar=CR.cbar;
+  var s=ex.rws/100,f=1.45,EB=(ml.E/ml.B)||1.25,G0=GEOf(),CR=G0?G0.cRoca({modo:ro.cModo,c:ro.c,q:ro.q,ucs:ro.ucs,kr:kr}):{modo:'auto',c:0.4*kr*kr,cbar:0.4*kr*kr+0.05,txt:''},cU=CR.modo!=='auto'?1:null,c=CR.c,cbar=CR.cbar;
   var Bmax=0.9*Math.sqrt(q*s/(cbar*f*EB)),errP=0.05+0.03*g.L,Bsug=Math.max(0.3,Bmax-errP);
   var cy=(d.corte.y==null?Math.min(g.H*0.42,g.H-g.W/2+0.2):d.corte.y),cx=d.corte.dx||0;
   var C=generarCorte(d,cx,cy),holes=C.holes.slice();
   // contorno y zapateras
-  var espC=(ro.rmr<40?12:15)*dm;var margen=0.15;
+  var espC=15*dm;var margen=0.15,Bc=Math.min(ml.B,1.25*espC);
   contorno(g,espC,margen).forEach(function(p){holes.push({x:p.x,y:p.y,t:'contorno',g:p.z==='tabla'?'Tablas':p.z==='hombro'?'Hombros':'Corona'})});
   var nz=Math.max(2,Math.ceil((g.W-2*margen)/ml.E)+1);for(var i=0;i<nz;i++)holes.push({x:-(g.W/2-margen)+(g.W-2*margen)*i/(nz-1),y:0.15,t:'zapatera',g:'Zapateras'});
   // destrozo: malla B×E dentro del perfil, fuera del corte y lejos del contorno
   var aMax=C.holes.reduce(function(mx,h){return Math.max(mx,Math.hypot(h.x-cx,h.y-cy))},0);
-  // ayudas del corte: anillo de 4 barrenos a un burden del último cuadrante
-  var aAy=aMax+ml.B*0.9;[PI/4,3*PI/4,5*PI/4,7*PI/4].forEach(function(t){if(d.corte.tipo==='cuna')t=t;var x=cx+aAy*Math.cos(t),y=cy+aAy*Math.sin(t);
-    if(dentro(g,x,y,margen+ml.B*0.45))holes.push({x:x,y:y,t:'destrozo',g:'Ayudas',r:aAy})});
-  var corteR=aAy+ml.B*0.6;
-  for(var yy=0.15+ml.B;yy<g.H;yy+=ml.B)for(var xx=-g.W/2;xx<=g.W/2;xx+=ml.E){
-    var x=xx+((Math.round((yy-0.15)/ml.B)%2)?ml.E/2:0)-((g.W/2)%ml.E)/2;
-    if(!dentro(g,x,yy,margen+ml.B*0.45))continue;if(Math.hypot(x-cx,yy-cy)<corteR)continue;
-    var cerca=holes.some(function(h){return Math.hypot(h.x-x,h.y-yy)<Math.min(ml.B,ml.E)*0.7});if(cerca)continue;
-    holes.push({x:x,y:yy,t:'destrozo',g:'Destrozo',r:Math.hypot(x-cx,yy-cy)})}
+  // ayudas del corte (tercer cuadrante de Holmberg): sobre los ejes, a un burden del cuadrante anterior
+  var Wl=Math.SQRT2*aMax,aAy=(d.corte.tipo==='cuna'?aMax+ml.B*0.9:Wl/2+ml.B*0.9),mInt=margen+0.85*Bc;
+  (d.corte.tipo==='cuna'?[PI/4,3*PI/4,5*PI/4,7*PI/4]:[0,PI/2,PI,3*PI/2]).forEach(function(t){var x=cx+aAy*Math.cos(t),y=cy+aAy*Math.sin(t);
+    if(dentro(g,x,Math.max(y,mInt),mInt*0.8)&&y>0.15+ml.B*0.45)holes.push({x:x,y:y,t:'destrozo',g:'Ayudas',r:aAy})});
+  // destrozo: relleno adaptativo. Cada barreno nuevo va al punto de la sección más alejado de los existentes,
+  // hasta que ningún punto quede a más de la distancia de cobertura de una malla B×E.
+  var tCob=(+d.malla.kCob||0.75)*Math.sqrt(ml.B*ml.E),paso=0.05,cand=[],md=[];
+  for(var cyy=0.15+ml.B*0.55;cyy<g.H;cyy+=paso)for(var cxx=-g.W/2;cxx<=g.W/2;cxx+=paso){
+    if(!dentro(g,cxx,cyy,mInt))continue;if(Math.hypot(cxx-cx,cyy-cy)<aMax+ml.B*0.35)continue;cand.push([cxx,cyy])}
+  cand.forEach(function(c,k){var m=1e9;holes.forEach(function(h){var dd2=Math.hypot(h.x-c[0],h.y-c[1]);if(dd2<m)m=dd2});md[k]=m});
+  for(var it=0;it<400&&cand.length;it++){var bi=-1,bv=0;for(var k2=0;k2<cand.length;k2++)if(md[k2]>bv){bv=md[k2];bi=k2}
+    if(bi<0||bv<tCob)break;var px=cand[bi][0],py=cand[bi][1];holes.push({x:px,y:py,t:'destrozo',g:'Destrozo',r:Math.hypot(px-cx,py-cy)});
+    for(var k3=0;k3<cand.length;k3++){var dq=Math.hypot(cand[k3][0]-px,cand[k3][1]-py);if(dq<md[k3])md[k3]=dq}}
   if(d.sequia==='izq'||d.sequia==='der'){var sx=(d.sequia==='izq'?-1:1)*(g.W/2-margen-0.25);holes.push({x:sx,y:0.15+0.35,t:'sequia',g:'Sequía'})}
   // capas de destrozo por distancia al corte
-  var des=holes.filter(function(h){return h.t==='destrozo'});corteR=aMax+ml.B*0.5;var rmx=des.reduce(function(m,h){return Math.max(m,h.r)},0),capas=Math.max(1,Math.min(4,Math.ceil((rmx-corteR)/ml.B)+0));
+  var des=holes.filter(function(h){return h.t==='destrozo'}),corteR=aMax+ml.B*0.5;var rmx=des.reduce(function(m,h){return Math.max(m,h.r)},0),capas=Math.max(1,Math.min(4,Math.ceil((rmx-corteR)/ml.B)+0));
   des.forEach(function(h){h.capa=Math.max(1,Math.min(capas,1+Math.floor((h.r-corteR)/ml.B)))});
   // periodos: corte sec1, sec2, destrozo por capa, tablas, hombros+corona, zapateras, sequía
   var per=1;holes.forEach(function(h){if(h.t==='arranque')h.p=h.sec});per=1+(C.secciones||1);
@@ -143,7 +149,7 @@ function disenar(d,cat){d=JSON.parse(JSON.stringify(d));var g=d.geom,ml=d.malla,
   var res={cR:CR,c:c,cbar:cbar,cUser:cU!=null,Bmax:Bmax,errP:errP,f:f,d:d,prod:ex,A:A,perim:perimetro(g),av:av,vol:vol,ton:ton,kr:kr,q:q,Bsug:Bsug,corte:C,phiEq:corteAvance(d.corte.dAliv,d.corte.nAliv).phiEq,
     Lmax:corteAvance(d.corte.dAliv,d.corte.nAliv).Lmax,holes:holes,nCarg:cargados.length,nAl:nAl,kg:kg,fc:vol?kg/vol:0,pf:ton?kg/ton:0,
     perfM:holes.length*g.L,periodos:periodos,cy:cy,cx:cx};
-  res.fcObj=(14/A+0.8)/(kr*kr);res.energia=kg*3.7*ex.rws/100;
+  res.fcObj=(14/A+0.8)*kr*kr;res.energia=kg*3.7*ex.rws/100;
   analizar(res);costos(res);return res}
 
 /* ---------- análisis ---------- */

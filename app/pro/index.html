@@ -162,7 +162,7 @@ var STEPS=[
   ['num','roca.rmr','RMR (Bieniawski)','',1,10,95,'Clase I > 80 · II 61–80 · III 41–60 · IV 21–40 · V < 20.'],['num','roca.ucs','Resistencia a compresión (UCS)','MPa',5,5,300],
   ['sel','roca.estructura','Estructura',[['masiva','Masiva / juntas apretadas'],['moderada','Moderadamente fracturada'],['fracturada','Fracturada'],['muy','Muy fracturada / con fallas']]],
   ['num','roca.dens','Densidad de la roca','t/m³',0.05,1.8,4.5],['sel','roca.agua','Condición de agua',[['seco','Seco'],['humedo','Húmedo / goteo'],['inundado','Barrenos con agua']]],
-  ['sub','Constante de roca y daño'],['sel','roca.cModo','Constante de roca c (Langefors)',[['auto','Estimarla con RMR y UCS (0,4/Kr²)'],['qrcs','Con Q de Barton y RCS (c̄ empírica)']]],
+  ['sub','Constante de roca y daño'],['sel','roca.cModo','Constante de roca c (Langefors)',[['auto','Estimarla con RMR y UCS (0,4·Kr²)'],['qrcs','Con Q de Barton y RCS (c̄ empírica)']]],
   ['num','roca.c','c calibrada (opcional)','kg/m³',0.01,0.1,1.5,'Si la escribes, manda sobre la estimada. c̄ = c + 0,05.'],
   ['num','roca.q','Q de Barton','',0.01,0.001,1000,'Activa la velocidad crítica PPVc = σt·Vp/E y la c̄ con Q y RCS.'],
   ['num','roca.st','Resistencia a tracción σt','MPa',0.1,0.5,40,'Vacío = RCS/10.'],['num','roca.ei','Módulo de Young de la roca intacta','GPa',0.5,2,120,'Vacío = 0,4·RCS.'],
@@ -184,7 +184,7 @@ var STEPS_LH=[
   ['sub','Veta variable a lo largo del tajo'],['est']]},
  {n:'2',t:'Veta y estabilidad',sum:function(){return 'potencia '+f1(D.veta.w)+' m · '+D.veta.dip+'° · RMR '+D.veta.rmr+" · N' "+f1((D.veta.q||0)*(D.veta.A||0)*(D.veta.B||0)*(D.veta.C||0))},k:['mathews','dil','pf'],f:[
   ['num','veta.w','Potencia de la veta (horizontal)','m',0.1,0.5,30],['num','veta.dip','Buzamiento','°',1,40,90],['num','veta.off','Desplazamiento de la veta respecto a la galería','m',0.1,-5,5,'+ hacia el alto · − hacia el bajo.'],['num','veta.rmr','RMR','',1,10,95],
-  ['num','veta.ucs','RCS de la roca','MPa',1,5,300],['sel','veta.cModo','Constante de roca c (Langefors)',[['auto','Estimarla con RMR (0,4/Kr²)'],['qrcs',"Con Q' y RCS (c̄ empírica)"]]],
+  ['num','veta.ucs','RCS de la roca','MPa',1,5,300],['sel','veta.cModo','Constante de roca c (Langefors)',[['auto','Estimarla con RMR (0,4·Kr²)'],['qrcs',"Con Q' y RCS (c̄ empírica)"]]],
   ['num','veta.c','c calibrada (opcional)','kg/m³',0.01,0.1,1.5,'Si la escribes, manda sobre la estimada. c̄ = c + 0,05.'],
   ['sub','Estructuras'],['num','rumbo','Rumbo del tajo (azimut)','°',1,0,359],['fam'],['sel','veta.auto','Factores B y C de Mathews',[['false','Ingresarlos a mano'],['true','Calcularlos con las estructuras (Potvin)']]],
   ['sub','Mathews (caja techo)'],['num','veta.q',"Q' (Q sin esfuerzos ni agua)",'',0.1,0,100],['num','veta.A','Factor A (esfuerzos)','',0.05,0.1,1],['num','veta.B','Factor B (orientación de juntas)','',0.05,0.2,1],['num','veta.C','Factor C (gravedad y buzamiento)','',0.1,1,8]]},
@@ -305,7 +305,7 @@ function vDiseno(){var g=D.geom,est=R.estado==='conforme'?'ok':R.estado==='revis
    '<div>Carga lineal q = π/4·(Ø·acopl.)²·ρ = π/4·('+D.malla.d+' mm·'+D.malla.acopl+')²·'+f2(R.prod.rho)+' = '+f2(R.q)+' kg/m.</div>'+
    '<div>Corte: Ø equivalente de alivio = √n·Ø = '+f0(R.phiEq*1000)+' mm → avance máximo 0,15 + 34,1·Ø − 39,4·Ø² = '+f2(R.Lmax)+' m (Holmberg).</div>'+
    '<div>Burden sugerido (Holmberg para túneles, base Langefors): B<sub>máx</sub> = 0,9·√(q·s / (c̄·f·E/B)) = 0,9·√('+f2(R.q)+'·'+f2(R.prod.rws/100)+' / ('+f2(R.cbar)+'·'+f2(R.f)+'·'+f2(D.malla.E/D.malla.B)+')) = '+f2(R.Bmax)+' m; menos el error de perforación 0,05 + 0,03·L = '+f2(R.errP)+' m → <b>'+f2(R.Bsug)+' m</b>. '+esc(R.cR?R.cR.txt:'')+' → c̄ = '+f2(R.cbar)+'.</div>'+
-   '<div>Factor de carga objetivo (14/A + 0,8)/Kr² = '+f2(R.fcObj)+' kg/m³; diseño '+f1(R.kg)+' kg / '+f1(R.vol)+' m³ = '+f2(R.fc)+' kg/m³.</div>'+
+   '<div>Factor de carga objetivo (14/A + 0,8)·Kr² = '+f2(R.fcObj)+' kg/m³; diseño '+f1(R.kg)+' kg / '+f1(R.vol)+' m³ = '+f2(R.fc)+' kg/m³.</div>'+
    '<div>Supuestos que debes calibrar: constantes de vibración, umbral de daño, factor de roca de Kuz-Ram y precios. Todo lo demás sale de tu captura.</div></div></div>';
   $('#t-diseno').innerHTML=h;bindScheme()}
 function holeInfo(){if(S.sel==null||!R.holes[S.sel])return 'Toca un barreno para ver sus datos.';var h=R.holes[S.sel];

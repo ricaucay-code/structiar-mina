@@ -61,11 +61,14 @@ function mathews(d){var v=d.veta,b=d.bloque,G=GEOf(),auto=null;if(v.auto&&G&&(d.
 function GEOf(){return (typeof root!=='undefined'&&root.SVE&&root.SVE.GEO)||(typeof require!=='undefined'?(function(){try{return require('./engine-geo.js')}catch(e){return null}})():null)}
 
 /* ---------- diseño completo ---------- */
-function disenarLH(d){d=JSON.parse(JSON.stringify(d));var b=d.bloque,v=d.veta,p=d.perf,ex=E0.CATALOGO.filter(function(x){return x.id===d.exp.id})[0]||E0.CATALOGO[0];
+function nm(x,def,a,b2){x=+x;return clamp(isFinite(x)&&x!==0?x:def,a,b2)}
+function disenarLH(d){d=JSON.parse(JSON.stringify(d));var b=d.bloque,v=d.veta,p=d.perf;
+  v.w=nm(v.w,3,0.2,40);v.dip=nm(v.dip,75,20,90);p.d=nm(p.d,89,30,250);p.B=nm(p.B,1.8,0.3,8);p.E=nm(p.E,2.2,0.3,10);b.H=nm(b.H,15,3,60);b.largo=nm(b.largo,30,2,500);
+  var ex=E0.CATALOGO.filter(function(x){return x.id===d.exp.id})[0]||E0.CATALOGO[0];
   var A=anillo(d),Z=A.Z,M=mathews(d),kr=E0.kRoca({rmr:v.rmr,ucs:+v.ucs||100,estructura:'moderada'});
   var tonAn=Z.area*p.B*b.densMin,nAn=Math.max(1,Math.floor(b.largo/p.B)),nDisp=Math.max(1,d.disparo.anillos);
   // burden sugerido (Langefors sobre carga de la columna)
-  var G1=GEOf(),CR=G1?G1.cRoca({modo:v.cModo,c:v.c,q:v.q,ucs:v.ucs,kr:kr}):{modo:'auto',c:0.4/(kr*kr),cbar:0.4/(kr*kr)+0.05,txt:''},cU=CR.modo!=='auto'?1:null,cL=CR.c,cbar=CR.cbar,Lmx=A.holes.reduce(function(m,h){return Math.max(m,h.len)},0),fA=0.85;
+  var G1=GEOf(),CR=G1?G1.cRoca({modo:v.cModo,c:v.c,q:v.q,ucs:v.ucs,kr:kr}):{modo:'auto',c:0.4*kr*kr,cbar:0.4*kr*kr+0.05,txt:''},cU=CR.modo!=='auto'?1:null,cL=CR.c,cbar=CR.cbar,Lmx=A.holes.reduce(function(m,h){return Math.max(m,h.len)},0),fA=0.85;
   var BmaxL=(p.d/33)*Math.sqrt((ex.rho*ex.rws/100)/(cbar*1.0*(p.E/p.B))),errP=0.05+p.dev/100*Lmx,Bsug=Math.max(0.8,fA*BmaxL-errP);
   // cuña (cara libre inicial): alivio + cargados alrededor, con desviación al fondo
   var C=d.cuna,phi=(C.tipo==='alivio'?C.dAliv/1000*Math.sqrt(Math.max(1,C.nAliv)):0),Lc=Z.banco+0.5,dev=Lc*p.dev/100;
@@ -87,7 +90,7 @@ function disenarLH(d){d=JSON.parse(JSON.stringify(d));var b=d.bloque,v=d.veta,p=
     cuna:{phi:phi,B1:B1,dev:dev,ratio:ratioFondo,kg:kgC,L:Lc,vacio:vacioCuna,n:C.nCarg},kgRet:kgRet,ppv:ppv,qAdm:qAdm,distMin:Math.sqrt(kgRet)*Math.pow(d.vibr.lim/d.vibr.K,-1/d.vibr.beta),
     elos:{hw:hwT,fw:fwT,voladura:elosV},dil:dil,tonEst:tonEst*nDisp,leyDil:leyDil,minBloque:Z.area*b.largo*b.densMin,
     esp:{factor:esp,vacio:vacio,necesita:necesita,ok:vacio>=necesita}};
-  R.pfObj=(0.35+0.9/Math.max(0.8,v.w))/kr;
+  R.pfObj=(0.35+0.9/Math.max(0.8,v.w))*kr;
   costosLH(R);alertasLH(R);if(!d._sub)variables(R);return R}
 /* anillos variables: interpola potencia, buzamiento, desplazamiento y ley entre estaciones a lo largo del rumbo */
 function interp(est,x,k){if(x<=est[0].x)return +est[0][k];for(var i=1;i<est.length;i++){if(x<=est[i].x){var a=est[i-1],b=est[i],t=(x-a.x)/((b.x-a.x)||1);return +a[k]+(+b[k]-+a[k])*t}}return +est[est.length-1][k]}

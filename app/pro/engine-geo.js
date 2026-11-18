@@ -32,7 +32,7 @@ function analizarTajo(fams,rumbo,dipVeta){var hw={dip:dipVeta,dd:norm360(rumbo+9
 function cRoca(o){var m=o.modo==='qrcs'?'qrcs':(+o.c>0?'manual':'auto'),c,cb,txt;
   if(m==='qrcs'&&+o.q>0&&+o.ucs>0){cb=0.1257*Math.exp(0.0109*o.q)+0.11*Math.log(o.ucs);c=cb-0.05;txt='c̄ = 0,1257·e^(0,0109·Q) + 0,11·ln(RCS) con Q '+fmt(o.q)+' y RCS '+fmt(o.ucs)+' MPa'}
   else if(m==='manual'&&+o.c>0){c=+o.c;cb=c+0.05;txt='c = '+fmt(c)+' (tu constante), c̄ = c + 0,05'}
-  else{m='auto';c=0.4/(o.kr*o.kr);cb=c+0.05;txt='c = 0,4/Kr² con Kr '+fmt(o.kr)+', c̄ = c + 0,05'}
+  else{m='auto';c=0.4*o.kr*o.kr;cb=c+0.05;txt='c = 0,4·Kr² con Kr '+fmt(o.kr)+', c̄ = c + 0,05'}
   return {modo:m,c:c,cbar:cb,txt:txt}}
 function fmt(x){return (Math.round(x*100)/100).toString().replace('.',',')}
 /* velocidad crítica de partícula (Persson / McKenzie): PPVc = σt·Vp/E ; Vp de Barton: 3500 + 1000·log10(Q) */
