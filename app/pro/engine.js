@@ -141,7 +141,7 @@ function revisionLit(R,d){var g=d.geom,A=R.A,kr=R.kr,ex=R.prod,rws=(ex.rws||100)
 
 /* KPIs de un disparo real contra la sección de diseño */
 function kpiDisparo(x,geom){var perf=+x.perf||0,av=+x.avance||0,A=area(geom),Ar=(+x.ancho>0&&+x.alto>0)?area({forma:geom.forma,W:+x.ancho,H:+x.alto}):null,vol=A*av,tal=+x.tal||0;
-  return {fecha:x.fecha,eff:perf?av/perf*100:null,sobre:Ar!=null?(Ar-A)/A*100:null,kgm3:vol&&+x.kg?+x.kg/vol:null,kgm:av&&+x.kg?+x.kg/av:null,mpm3:vol&&tal&&perf?tal*perf/vol:null,
+  return {fecha:x.fecha,eff:perf?av/perf*100:null,sobre:x.perfil&&x.perfil.sobrePct!=null?+x.perfil.sobrePct:(Ar!=null?(Ar-A)/A*100:null),kgm3:vol&&+x.kg?+x.kg/vol:null,kgm:av&&+x.kg?+x.kg/av:null,mpm3:vol&&tal&&perf?tal*perf/vol:null,
     fall:x.fall!=null&&x.fall!==''?+x.fall:(x.qa&&x.qa.fall!=null?+x.qa.fall:null),hcf:x.hcf!=null&&x.hcf!==''?+x.hcf:null,acu:x.acu!=null&&x.acu!==''?+x.acu:null,culote:x.culote!=null&&x.culote!==''?+x.culote:null}}
 var KPIS=[['eff','Eficiencia de avance','%',1],['sobre','Sobreexcavación de área','%',-1],['kgm3','Factor de carga real','kg/m³',0],['kgm','Explosivo por metro de avance','kg/m',-1],['mpm3','Perforación específica real','m/m³',-1],['culote','Culote (taco sin romper)','m',-1],['fall','Tiros fallados','u',-1],['hcf','Medias cañas visibles (HCF)','%',1],['acu','Tiempo de acuñadura','min',-1]];
 function kpiResumen(list,geom){var ks=list.slice().sort(function(a,b){return String(a.fecha).localeCompare(String(b.fecha))}).map(function(x){return kpiDisparo(x,typeof geom==='function'?geom(x):geom)}),nB=Math.min(5,Math.ceil(ks.length/2));
