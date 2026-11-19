@@ -88,7 +88,7 @@ td input{min-height:30px;padding:3px 6px;max-width:90px}
 <header><div class="hrow">
   <a class="brand" href="../" title="Volver a Structiar Mina"><img src="../icons/icon-192.png" alt=""><span><b>STRUCT<i>IAR</i></b><small>Voladura Pro · diseño y QA/QC</small></span></a>
   <span class="save" id="saveSt"></span>
-  <div class="hact"><button class="btn g sm" data-a="nuevo">Nuevo</button><button class="btn g sm" data-a="duplicar">Duplicar</button><button class="btn w" data-a="guardar" id="bGuardar">Guardar</button><button class="btn g sm" data-a="pdf">Reporte PDF</button><button class="btn g sm" data-a="csv">Excel</button></div>
+  <div class="hact"><button class="btn g sm" data-a="nuevo">Nuevo</button><button class="btn g sm" data-a="duplicar">Duplicar</button><button class="btn w" data-a="guardar" id="bGuardar">Guardar</button><button class="btn g sm" data-a="pdf">Reporte PDF</button><button class="btn g sm" data-a="csv">Excel</button><button class="btn g sm" data-a="dxf">DXF</button></div>
 </div></header>
 <div id="gate" class="gate" hidden></div>
 <div class="wrap" id="app" hidden>
@@ -172,7 +172,7 @@ var STEPS=[
   ['num','roca.vp','Velocidad de onda P medida','m/s',10,500,7000,'Vacío = Barton: 3500 + 1000·log Q.'],
   ['sub','Estructuras'],['num','geom.rumbo','Rumbo de la labor (azimut del eje)','°',1,0,359],['fam']]},
  {n:'3',t:'Explosivo y carga',sum:function(){var p=R&&R.prod;return (p?p.nombre:'')+' · contorno '+D.malla.contornoPct+' %'},k:['fc'],f:[
-  ['exp'],['num','malla.acopl','Acoplamiento (Ø carga / Ø barreno)','',0.05,0.5,1,'Cartucho sin atacar ≈ 0,8–0,85; atacado o granel ≈ 0,95–1.'],['num','malla.contornoPct','Carga de contorno','%',5,10,100,'Porcentaje de la columna normal en tablas y corona (voladura controlada).']]},
+  ['exp'],['num','malla.acopl','Acoplamiento (Ø carga / Ø barreno)','',0.05,0.5,1,'Cartucho sin atacar ≈ 0,8–0,85; atacado o granel ≈ 0,95–1.'],['num','malla.contornoPct','Carga de contorno','%',5,10,100,'Porcentaje de la columna normal en tablas y corona. Recorte: carga mínima 90·d² kg/m.'],['num','malla.evCont','Relación E/V del contorno','',0.01,0.6,1,'0,8 Holmberg · 0,67 USBR. Define el burden de la fila vecina.'],['sel','malla.sbAbajo','S/B de la destroza hacia abajo',[['1.25','1,25 (López Jimeno)'],['1.75','1,75 (informe INL/CSM)']]]]},
  {n:'4',t:'Tiempos y secuencia',sum:function(){return (E.SERIES[D.tiempos.serie]||{}).nombre||''},k:['sec'],f:[
   ['sel','tiempos.serie','Serie de retardos',Object.keys(E.SERIES).map(function(k){return [k,E.SERIES[k].nombre]})],['num','tiempos.disp','Dispersión de los detonadores','± %',0.5,0,10,'Pirotécnicos ≈ 3 %; electrónicos ≈ 0,1 %.']]},
  {n:'5',t:'Vibración',sum:function(){return f0(D.vibr.lim)+' mm/s a '+f0(D.vibr.dist)+' m · K '+f0(D.vibr.K)+' β '+f2(D.vibr.beta)},k:['vib'],f:[
@@ -269,6 +269,15 @@ function lineChart(o){var W=520,H=220,pl=46,pr=12,pt=12,pb=34,xs=o.xs,ys=o.ys;va
   return s+'</svg>'}
 
 /* ---------- vistas ---------- */
+function panelZonas(){if(!R.zonasH)return '';var ct=R.contorno||{};
+  return '<div class="panel"><div class="ph"><h3>Burden por zona (Holmberg)</h3><small class="mute">con tu explosivo y roca · error de perforación '+f2(R.errP)+' m</small></div><div class="tbl"><table><thead><tr><th>Zona</th><th class="n">f</th><th class="n">S/B</th><th class="n">c̄</th><th class="n">B máx m</th><th class="n">B práctico m</th><th class="n">E m</th></tr></thead><tbody>'+
+   R.zonasH.map(function(z){return '<tr><td>'+esc(z.zona)+'</td><td class="n">'+f2(z.f)+'</td><td class="n">'+f2(z.sb)+'</td><td class="n">'+f2(z.cbar)+'</td><td class="n">'+f2(z.Bmax)+'</td><td class="n"><b>'+f2(z.B)+'</b></td><td class="n">'+f2(z.E)+'</td></tr>'}).join('')+
+   '<tr><td>Contorno con recorte</td><td class="n">—</td><td class="n">E/V '+f2(+D.malla.evCont||0.8)+'</td><td class="n">—</td><td class="n">—</td><td class="n"><b>'+f2((ct.E||0)/(+D.malla.evCont||0.8))+'</b></td><td class="n">'+f2(ct.E)+'</td></tr></tbody></table></div>'+
+   '<p class="note">Contorno: carga actual '+f2(ct.q)+' kg/m contra el mínimo de recorte 90·d² = '+f2(ct.qMin)+' kg/m'+(ct.ratio>2?' → <b>'+f1(ct.ratio)+'× más</b>: para voladura controlada usa ≈ '+ct.pctSug+' % de carga o cartuchos desacoplados / explosivo de baja densidad.':'.')+(ct.EV?' E/V medido en el diseño: '+f2(ct.EV)+' (rango 0,6–1,0).':'')+(R.qCuele!=null?' Cuele (secciones 1–2): '+f1(R.qCuele)+' kg/m³ (literatura: 7–10 kg/m³ o más).':'')+'</p></div>'}
+function panelFormulas(){var F=R.formulas||[];if(!F.length)return '';var EST={V:['ok','verificada'],VP:['aviso','verificada en parte'],NV:['n','sin verificar']};
+  return '<div class="panel"><div class="ph"><h3>Fórmulas, fuentes y validez</h3><small class="mute">trazabilidad de cada cálculo</small></div><div class="tbl"><table><thead><tr><th>Cálculo</th><th>Fórmula</th><th>Estado</th><th>Rango de validez</th><th>Este diseño</th></tr></thead><tbody>'+
+   F.map(function(r){var e=EST[r.est]||EST.NV;return '<tr><td>'+esc(r.n)+'<div class="mute" style="font-size:11.5px">'+esc(r.src)+'</div></td><td class="mono" style="font-size:12px">'+esc(r.f)+'</td><td><span class="pill '+e[0]+'">'+e[1]+'</span></td><td style="font-size:12.5px">'+esc(r.rango)+'</td><td style="font-size:12.5px">'+esc(String(r.val).replace(/(\d)\.(\d)/g,'$1,$2'))+(r.ok===true?' <span class="pill ok">en rango</span>':r.ok===false?' <span class="pill error">fuera de rango</span>':'')+'</td></tr>'}).join('')+'</tbody></table></div>'+
+   '<p class="note">«Verificada»: confirmada en al menos una fuente. «Sin verificar»: forma clásica de la literatura que aún no se cotejó con el texto original; úsala como referencia y calibra con tus disparos.</p></div>'}
 function pillE(e){return e?'<span class="pill '+(e==='ok'?'ok':e==='aviso'?'aviso':'error')+'">'+(e==='ok'?'en rango':e==='aviso'?'al límite':'fuera')+'</span>':'<span class="mute">—</span>'}
 var VC={key:'',V:null,t:null};
 function panelVariantes(){var sd=sanear(D),key=JSON.stringify([sd.geom,sd.malla,sd.corte,sd.roca,sd.exp,sd.costos]);
@@ -317,11 +326,11 @@ function vDiseno(){var g=D.geom,est=R.estado==='conforme'?'ok':R.estado==='revis
    '<div class="grid6" style="margin-top:8px"><div><div class="l">P50</div><div class="v">'+f1(R.frag.X50)+' cm</div></div><div><div class="l">Bolones > 50 cm</div><div class="v">'+f1(R.frag.bolones)+' %</div></div><div><div class="l">Uniformidad n</div><div class="v">'+f2(R.frag.n)+'</div></div></div>'+
    '<p class="note">Kuz-Ram (Cunningham). Estimación de escritorio para comparar diseños; se calibra con fotos de la pila.</p></div></div>';
   var zs=Object.keys(R.zonas).map(function(k){return [k,R.zonas[k]]}).sort(function(a,b){return b[1].kg-a[1].kg});
-  h+='<div class="g2"><div class="panel"><div class="ph"><h3>Daño y sobreexcavación</h3><span class="r pill '+(R.dano.sobre<=0.15?'ok':'aviso')+'">'+f2(R.dano.sobre)+' m</span></div><div class="grid6"><div><div class="l">Sobreexc. media</div><div class="v">'+f2(R.dano.sobre)+' m</div></div><div><div class="l">Sobreexc. máxima</div><div class="v">'+f2(R.dano.sobreMax)+' m</div></div><div><div class="l">Volumen extra</div><div class="v">'+f2(R.dano.vol)+' m³</div></div><div><div class="l">Umbral daño / rotura</div><div class="v">'+f0(R.dano.umbral)+' / '+f0(R.dano.rotura)+'</div></div><div><div class="l">Profundidad de daño</div><div class="v">'+f2(R.dano.rDano)+' m</div></div></div><p class="note">Holmberg–Persson con la carga real del contorno ('+D.malla.contornoPct+' %). '+(R.ppvc?'Umbral = PPVc = σt·Vp/E = '+f1(R.ppvc.st)+'·'+f0(R.ppvc.vp)+' / '+f1(R.ppvc.ei)+' = '+f0(R.ppvc.ppvc)+' mm/s'+(R.ppvc.stEst||R.ppvc.eiEst?' (σt o E estimados)':'')+'; sobreexcavación donde la PPV supera 4·PPVc (daño notorio, McKenzie).':'Rotura a 3× el umbral de daño para RMR '+D.roca.rmr+'. Ingresa Q de Barton en el paso 2 para usar la velocidad crítica PPVc.')+' Calibra con el perfil escaneado.</p>'+
+  h+='<div class="g2"><div class="panel"><div class="ph"><h3>Daño y sobreexcavación</h3><span class="r pill '+(R.dano.sobre<=0.15?'ok':'aviso')+'">'+f2(R.dano.sobre)+' m</span></div><div class="grid6"><div><div class="l">Sobreexc. media</div><div class="v">'+f2(R.dano.sobre)+' m</div></div><div><div class="l">Sobreexc. máxima</div><div class="v">'+f2(R.dano.sobreMax)+' m</div></div><div><div class="l">Volumen extra</div><div class="v">'+f2(R.dano.vol)+' m³</div></div><div><div class="l">Umbral daño / rotura</div><div class="v">'+f0(R.dano.umbral)+' / '+f0(R.dano.rotura)+'</div></div><div><div class="l">Profundidad de daño</div><div class="v">'+f2(R.dano.rDano)+' m</div></div></div><p class="note">Holmberg–Persson con la carga real del contorno ('+D.malla.contornoPct+' %). '+(R.ppvc?'Umbral = PPVc = σt·Vp/E = '+f1(R.ppvc.st)+'·'+f0(R.ppvc.vp)+' / '+f1(R.ppvc.ei)+' = '+f0(R.ppvc.ppvc)+' mm/s'+(R.ppvc.stEst||R.ppvc.eiEst?' (σt o E estimados)':'')+'; sobreexcavación donde la PPV supera 3·PPVc (caída de material: 2–3,5×PPVc, Singh).':'Rotura a 3× el umbral de daño para RMR '+D.roca.rmr+'. Ingresa Q de Barton en el paso 2 para usar la velocidad crítica PPVc.')+' Calibra con el perfil escaneado.</p>'+
    (R.ppvc?'<div class="tbl" style="margin-top:8px"><table><thead><tr><th>Zona (McKenzie)</th><th class="n">PPV</th><th class="n">mm/s</th></tr></thead><tbody>'+R.ppvc.zonas.map(function(z){return '<tr><td>'+esc(z.n)+'</td><td class="n">'+(z.f===0.25?'¼':z.f)+'·PPVc</td><td class="n">'+f0(z.v)+'</td></tr>'}).join('')+'</tbody></table></div>':'')+'</div>'+
    '<div class="panel"><div class="ph"><h3>Energía por zona</h3></div>'+zs.map(function(z){var pc=z[1].kg/R.kg*100;return '<div style="display:grid;grid-template-columns:110px 1fr 120px;gap:8px;align-items:center;margin:5px 0;font-size:13px"><span>'+esc(z[0])+'</span><span class="bar"><i style="width:'+pc.toFixed(1)+'%"></i></span><span class="mono" style="text-align:right">'+f1(z[1].kg)+' kg · '+f0(pc)+' %</span></div>'}).join('')+
    '<div class="grid6" style="margin-top:10px"><div><div class="l">Volumen suelto</div><div class="v">'+f0(R.rezaga.suelto)+' m³</div></div><div><div class="l">Cucharones de 6 t</div><div class="v">'+R.rezaga.cuch+'</div></div><div><div class="l">Energía</div><div class="v">'+f0(R.energia)+' MJ</div></div></div></div></div>';
-  h+=panelVariantes()+panelRevision();
+  h+=panelZonas()+panelVariantes()+panelRevision()+panelFormulas();
   h+='<div class="panel"><div class="ph"><h3>Cómo se calculó</h3></div><div style="font-size:13px;display:grid;gap:5px">'+
    '<div>Sección '+(g.forma==='rect'?'rectangular':'en herradura')+' de '+f2(g.W)+' × '+f2(g.H)+' m → área '+f2(R.A)+' m². Avance '+f2(g.L)+' m × '+g.eff+' % = '+f2(R.av)+' m → '+f1(R.vol)+' m³ × '+f2(D.roca.dens)+' t/m³ = '+f0(R.ton)+' t.</div>'+
    '<div>Carga lineal q = π/4·(Ø·acopl.)²·ρ = π/4·('+D.malla.d+' mm·'+D.malla.acopl+')²·'+f2(R.prod.rho)+' = '+f2(R.q)+' kg/m.</div>'+
@@ -368,11 +377,35 @@ function vCarga(){var c=R.costo,P=E.planCarga(R);
    '<tr><td>Iniciación</td><td>Línea de inicio (mecha de seguridad, fulminante, cordón o conectores)</td><td class="n">1 juego</td><td></td></tr></tbody></table></div><p class="note">'+R.nCarg+' detonadores para '+R.nCarg+' barrenos cargados. Manguera = barreno + 1 m, al largo comercial. Agrega la reserva que exija el procedimiento del polvorín.</p></div>';
   $('#t-carga').innerHTML=h}
 
+/* ---------- ficha de disparo (funciona sin conexión) y KPIs ---------- */
+function colaLeer(){try{return JSON.parse(localStorage.getItem('svp-cola'))||[]}catch(e){return []}}
+function colaGuardar(c){try{localStorage.setItem('svp-cola',JSON.stringify(c))}catch(e){}}
+function colaSync(){var c=colaLeer();if(!c.length||!sb||!S.mina||!navigator.onLine)return Promise.resolve(0);
+  return Promise.all(c.map(function(x){return sb.from('docs').upsert({mina_id:S.mina.id,coll:'disparos',id:x.id,data:x.data}).then(function(r){return r.error?x:null},function(){return x})})).then(function(res){var pend=res.filter(Boolean);colaGuardar(pend);var n=c.length-pend.length;if(n)toast(n+' disparo'+(n>1?'s':'')+' sincronizado'+(n>1?'s':''));return n})}
+window.addEventListener('online',function(){colaSync().then(function(n){if(n&&S.tab==='real')vReal()})});
+function fichaDisparo(){if(LHm())return '';var fs=Object.keys(S.frentes).map(function(k){return S.frentes[k]}),hoy=new Date().toISOString().slice(0,10),cola=colaLeer().length;
+  function n(nm,l,st,u,req){return '<label class="f">'+l+(u?' <span class="mute">'+u+'</span>':'')+'<input type="number" step="'+st+'" min="0" name="'+nm+'"'+(req?' required':'')+'></label>'}
+  return '<div class="panel noprint"><div class="ph"><h3>Ficha del disparo</h3><small class="mute">resultado real de este diseño'+(cola?' · <b>'+cola+' pendiente'+(cola>1?'s':'')+' de sincronizar</b>':'')+'</small></div>'+
+   '<form id="fDisp" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;align-items:end">'+
+   '<label class="f">Fecha<input type="date" name="fecha" value="'+hoy+'" required></label><label class="f">Turno<select name="turno"><option value="0">Turno 1 / día</option><option value="1">Turno 2 / noche</option><option value="2">Turno 3</option></select></label>'+
+   '<label class="f">Frente<select name="frente" required>'+(fs.length?fs.map(function(f){return '<option value="'+esc(f.id)+'"'+(f.id===D.frente?' selected':'')+'>'+esc(f.nombre||f.id)+'</option>'}).join(''):'<option value="">Crea un frente en la app</option>')+'</select></label>'+
+   n('perf','Largo perforado','0.01','m',1)+n('avance','Avance medido','0.01','m',1)+n('tal','Barrenos perforados','1','u')+n('talc','Barrenos cargados','1','u')+n('kg','Explosivo usado','0.1','kg')+
+   n('ancho','Ancho real','0.01','m')+n('alto','Alto real','0.01','m')+n('culote','Culote (taco sin romper)','0.01','m')+n('fall','Tiros fallados','1','u')+n('hcf','Medias cañas visibles','1','%')+n('acu','Acuñadura','1','min')+
+   '<label class="f" style="grid-column:1/-1">Observación<input name="nota" maxlength="300" placeholder="Geología, agua, problemas de carguío…"></label>'+
+   '<button class="btn" type="submit">Guardar disparo</button></form>'+
+   '<p class="note">Se guarda en los disparos de la mina (también aparece en Structiar Mina). Sin señal, queda en este equipo y se sincroniza al volver la conexión.</p></div>'}
+function geomDe(x){var g=sanear(D).geom,fr=S.frentes[x.frente];if(+x.secW>0&&+x.secH>0)return {forma:x.forma||g.forma,W:+x.secW,H:+x.secH};if(x.diseno&&x.diseno===S.id)return g;if(fr&&+fr.ancho>0&&+fr.alto>0)return {forma:g.forma,W:+fr.ancho,H:+fr.alto};return g}
+function tableroKPI(ds){if(LHm())return '';var K=E.kpiResumen(ds,geomDe);if(!K.n)return '<div class="panel"><div class="ph"><h3>Indicadores del ciclo</h3></div><p class="note">Registra disparos con la ficha para ver la línea base y la tendencia de tus indicadores.</p></div>';
+  function v(o,u){return o?(u==='u'?f1(o.m):f2(o.m)):'—'}
+  return '<div class="panel"><div class="ph"><h3>Indicadores del ciclo</h3><small class="mute">'+K.n+' disparos · línea base = primeros '+Math.min(5,Math.ceil(K.n/2))+', reciente = últimos '+Math.min(5,Math.ceil(K.n/2))+'</small></div><div class="tbl"><table><thead><tr><th>Indicador</th><th class="n">Línea base</th><th class="n">Reciente</th><th class="n">Promedio</th><th class="n">Datos</th><th>Tendencia</th></tr></thead><tbody>'+
+   K.filas.map(function(r){return '<tr><td>'+esc(r.n)+' <span class="mute">'+esc(r.u)+'</span></td><td class="n">'+v(r.base,r.u)+'</td><td class="n">'+v(r.rec,r.u)+'</td><td class="n">'+v(r.tot,r.u)+'</td><td class="n">'+(r.tot?r.tot.n:0)+'</td><td>'+(r.mejora===1?'<span class="pill ok">mejora</span>':r.mejora===-1?'<span class="pill error">empeora</span>':r.mejora===0?'<span class="pill n">igual</span>':'<span class="mute">—</span>')+'</td></tr>'}).join('')+'</tbody></table></div>'+
+   '<p class="note">Sobreexcavación = área real (ancho × alto medidos, misma forma) contra la de diseño. Las metas se fijan contra la línea base de tu mina, no contra un estándar importado. Con unos 30 disparos por labor se podrá calibrar el modelo de esta mina.</p></div>'}
 function vReal(){var fr=D.frente&&S.frentes[D.frente],ds=S.disparos.filter(function(x){return !D.frente||x.frente===D.frente}).sort(function(a,b){return String(b.fecha).localeCompare(a.fecha)});
   var ef=E.eficienciaReal(ds),h='',kgD=LHm()?R.kgDisp:R.kg;
   h+='<div class="kpis"><div class="kpi a"><div class="l">Disparos reales'+(fr?' · '+esc(fr.nombre):'')+'</div><div class="v">'+ds.length+'</div><div class="s">registrados en Structiar (últimos 120 días)</div></div>'+
    '<div class="kpi b"><div class="l">Eficiencia real</div><div class="v">'+(ef?f1(ef.media):'—')+'<small>%</small></div><div class="s">'+(LHm()?'aplica a frentes de avance':'diseño '+D.geom.eff+' %')+(ef?' · '+ef.n+' disparos':'')+'</div></div>'+
    '<div class="kpi"><div class="l">Explosivo real promedio</div><div class="v">'+(ds.length?f1(ds.reduce(function(s,x){return s+(+x.kg||0)},0)/ds.length):'—')+'<small>kg</small></div><div class="s">diseño '+f1(kgD)+' kg</div></div></div>';
+  h+=fichaDisparo()+tableroKPI(ds);
   h+='<div class="panel"><div class="ph"><h3>Cerrar el ciclo: diseño contra lo ejecutado</h3></div>'+(D.frente?'':'<div class="banner info" style="margin-bottom:10px">Vincula este diseño a un frente (arriba, en el panel izquierdo) para comparar solo sus disparos.</div>')+
    (ef&&!LHm()?'<p style="margin:0 0 10px">La eficiencia real medida es <b>'+f1(ef.media)+' %</b>'+(Math.abs(ef.media-D.geom.eff)>=2?' y el diseño supone '+D.geom.eff+' %. <button class="btn sm" data-a="usarEff" data-v="'+Math.round(ef.media)+'">Usar '+Math.round(ef.media)+' % en el diseño</button>':', igual a la del diseño.')+'</p>':'<p class="mute" style="margin:0 0 10px">Aún no hay disparos con largo perforado y avance registrados para este frente. Regístralos en la pestaña Voladura de la app.</p>')+
    '<div class="tbl"><table><thead><tr><th>Fecha</th><th>Frente</th><th class="n">Perforado</th><th class="n">Avance</th><th class="n">Eficiencia</th><th class="n">kg real</th><th class="n">vs. diseño</th><th>QA/QC</th></tr></thead><tbody>'+
@@ -600,6 +633,7 @@ document.addEventListener('click',function(e){var tp=e.target.closest('[data-tip
   if(act==='addEst'){D.estaciones=D.estaciones||[];var es=D.estaciones,last=es[es.length-1];es.push(last?{x:Math.min(D.bloque.largo,(+last.x||0)+10),w:last.w,dip:last.dip,off:last.off||0,ley:last.ley}:{x:0,w:D.veta.w,dip:D.veta.dip,off:D.veta.off||0,ley:D.bloque.ley});if(es.length===1)es.push({x:D.bloque.largo,w:D.veta.w,dip:D.veta.dip,off:D.veta.off||0,ley:D.bloque.ley});renderSteps();changed(true);return}
   if(act==='delEst'){D.estaciones.splice(+a.dataset.i,1);renderSteps();changed(true);return}
   if(act==='ring'){S.ringSel=a.dataset.i===''?null:+a.dataset.i;stopSim();S.sim=null;vDisenoLH();return}
+  if(act==='dxf'){dxf();return}
   if(act==='cuele'){var V2=E.variantesCuele(sanear(D),S.cat),o=V2.lista.filter(function(x){return x.id===a.dataset.id})[0];if(o&&o.tipo){D.corte.tipo=o.tipo;if(o.tipo!=='cuna'){D.corte.nAliv=o.nAliv;D.corte.dAliv=o.dAliv}renderSteps();changed(true);toast('Cuele aplicado: '+o.nombre)}return}
   if(act==='bsug'&&LHm()){D.perf.B=Math.round(R.Bsug*20)/20;D.perf.E=Math.round(D.perf.B*1.2*20)/20;changed(true);toast('Burden '+f2(D.perf.B)+' m y espaciamiento al fondo '+f2(D.perf.E)+' m');return}
   if(act==='bsug'){D.malla.B=Math.round(R.Bsug*20)/20;D.malla.E=Math.round(D.malla.B*1.15*20)/20;changed(true);toast('Burden '+f2(D.malla.B)+' m y espaciamiento '+f2(D.malla.E)+' m')}
@@ -617,6 +651,14 @@ document.addEventListener('click',function(e){var tp=e.target.closest('[data-tip
   else if(act==='plantilla'){var p=PLANT[+a.dataset.i];if(S.dirty&&!confirm('Hay cambios sin guardar. ¿Usar la plantilla?'))return;var nd=p.lh?E.LH.defaultsLH():E.defaults();Object.keys(p.d).forEach(function(k){nd[k]=Object.assign({},nd[k],p.d[k])});nd.nombre=p.n;D=nd;S.id=null;S.dirty=true;S.tab='diseno';stopSim();S.sim=null;renderSteps();renderAll();window.scrollTo(0,0)}
   else if(act==='estandar'){var y=S.disenos[id];if(!y)return;y.estandar=!y.estandar;saveDoc('disenos',id,strip(y)).then(function(){vBiblio()})}
   else if(act==='borrar'){if(!confirm('¿Borrar este diseño para toda la mina?'))return;sb.from('docs').delete().eq('mina_id',S.mina.id).eq('coll','disenos').eq('id',id).then(function(r){if(r.error){toast(r.error.message);return}delete S.disenos[id];if(S.id===id)S.id=null;vBiblio();toast('Diseño borrado')})}});
+document.addEventListener('submit',function(e){if(e.target.id!=='fDisp')return;e.preventDefault();var f=new FormData(e.target),g=function(k){var v=f.get(k);return v===''||v==null?null:+v};
+  var o={fecha:f.get('fecha'),turno:+f.get('turno')||0,frente:f.get('frente')||'',perf:g('perf'),avance:g('avance'),tal:g('tal'),talc:g('talc'),kg:g('kg'),ancho:g('ancho'),alto:g('alto'),culote:g('culote'),fall:g('fall'),hcf:g('hcf'),acu:g('acu'),nota:String(f.get('nota')||'').trim(),diseno:S.id||null,origen:'pro',ts:Date.now()};var g0=sanear(D).geom;o.secW=g0.W;o.secH=g0.H;o.forma=g0.forma;
+  if(!o.frente){toast('Elige el frente');return}if(!(o.perf>0&&o.avance>0)){toast('Falta el largo perforado o el avance medido');return}if(o.avance>o.perf*1.05){toast('El avance no puede superar el largo perforado');return}
+  if(o.hcf!=null&&o.hcf>100){toast('Las medias cañas van de 0 a 100 %');return}if(!(S.rol==='admin'||S.rol==='colaborador')){toast('Tu rol no permite registrar disparos');return}
+  var id=uid(),kp=E.kpiDisparo(o,geomDe(o));function listo(txt){o.id=id;S.disparos.push(o);vReal();toast(txt+': avance '+f2(o.avance)+' m ('+f0(kp.eff)+' %)'+(kp.sobre!=null?', sobreexcavación '+f0(kp.sobre)+' %':''))}
+  function encolar(){var c=colaLeer();c.push({id:id,data:o});colaGuardar(c);listo('Sin conexión: guardado en el equipo')}
+  if(!navigator.onLine){encolar();return}
+  sb.from('docs').upsert({mina_id:S.mina.id,coll:'disparos',id:id,data:o}).then(function(r){if(r.error){if(/row-level|permission/i.test(r.error.message)){toast('Sin permiso para guardar disparos en esta mina');return}encolar();return}listo('Disparo guardado')},encolar)});
 document.addEventListener('submit',function(e){if(e.target.id!=='fSis')return;e.preventDefault();var f=new FormData(e.target),o={fecha:f.get('fecha'),dist:+f.get('dist'),q:+f.get('q'),ppv:+f.get('ppv'),frente:D.frente||''};
   if(!(o.dist>0&&o.q>0&&o.ppv>0)){toast('Completa distancia, kg por retardo y PPV');return}if(!S.pro){toast('Las lecturas se guardan con el plan Pro');return}
   var id=uid();saveDoc('sismos',id,o).then(function(ok){if(ok){o.id=id;S.sismos[id]=o;vReal();toast('Lectura guardada')}})});
@@ -647,6 +689,18 @@ function svgPng(svgEl,w){return new Promise(function(res){try{var s=new XMLSeria
   img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s)}catch(e){res(null)}})}
 function loadJsPDF(){return new Promise(function(res,rej){if(window.jspdf)return res(window.jspdf.jsPDF);var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';s.integrity='sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk';s.crossOrigin='anonymous';s.onload=function(){res(window.jspdf.jsPDF)};s.onerror=rej;document.head.appendChild(s)})}
 function T(s){return String(s==null?'':s).replace(/[≥]/g,'>=').replace(/[≤]/g,'<=').replace(/[–—]/g,'-').replace(/[×]/g,'x').replace(/[√]/g,'raiz ').replace(/[^\x00-\xFF]/g,'')}
+/* DXF R12 (AutoCAD / topografía): perfil, barrenos por capa y etiquetas; unidades en metros */
+function dxf(){var o=['0','SECTION','2','ENTITIES'];function capa(l){return String(l||'0').toUpperCase().replace(/[^A-Z0-9_]/g,'_').slice(0,31)}
+  function line(l,x1,y1,x2,y2){o.push('0','LINE','8',capa(l),'10',x1.toFixed(4),'20',y1.toFixed(4),'30','0','11',x2.toFixed(4),'21',y2.toFixed(4),'31','0')}
+  function circ(l,x,y,r){o.push('0','CIRCLE','8',capa(l),'10',x.toFixed(4),'20',y.toFixed(4),'30','0','40',r.toFixed(4))}
+  function text(l,x,y,h,t){o.push('0','TEXT','8',capa(l),'10',x.toFixed(4),'20',y.toFixed(4),'30','0','40',h.toFixed(3),'1',String(t).replace(/[^\x20-\x7E]/g,''))}
+  function perfil(g,ox,oy,l){var W=g.W,H=g.H,pts=[];if(g.forma==='rect')pts=[[-W/2,0],[-W/2,H],[W/2,H],[W/2,0]];else{var r=W/2,h=Math.max(0,H-r);pts.push([-r,0],[-r,h]);for(var a=180;a>=0;a-=6)pts.push([r*Math.cos(a*Math.PI/180),h+r*Math.sin(a*Math.PI/180)]);pts.push([r,0])}
+    pts.push(pts[0]);for(var i=1;i<pts.length;i++)line(l,ox+pts[i-1][0],oy+pts[i-1][1],ox+pts[i][0],oy+pts[i][1])}
+  if(LHm()){var b=D.bloque;R.A.holes.forEach(function(h){line('Taladros',h.x0,h.y0,h.x1,h.y1);circ('Collares',h.x0,h.y0,D.perf.d/2000);text('Etiquetas',h.x1+0.05,h.y1+0.05,0.15,h.id+' '+h.len.toFixed(1)+'m')});
+    if(R.Z&&R.Z.hw){var y0=R.Z.y0||0,y1=y0+(R.Z.banco||b.H);line('Veta',R.Z.fw(y0),y0,R.Z.fw(y1),y1);line('Veta',R.Z.hw(y0),y0,R.Z.hw(y1),y1)}}
+  else{perfil(D.geom,0,0,'Perfil');R.holes.forEach(function(h){var r=(h.t==='alivio'?D.corte.dAliv:D.malla.d)/2000;circ(h.g,h.x,h.y,Math.max(r,0.01));text('Etiquetas',h.x+0.05,h.y+0.05,0.06,h.id+(h.p?' P'+h.p:''))})}
+  text('Titulo',0,-0.4,0.12,'Structiar Voladura Pro - '+(D.nombre||'diseno'));o.push('0','ENDSEC','0','EOF');
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([o.join('\r\n')],{type:'application/dxf'}));a.download=(LHm()?'Anillo-':'Frente-')+(D.nombre||'diseno').replace(/[^\w\-]+/g,'-').slice(0,40)+'.dxf';document.body.appendChild(a);a.click();setTimeout(function(){a.remove()},500);toast('Plano DXF descargado')}
 function dlText(name,txt){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){a.remove()},500)}
 function csvLH(){var rows=[['anillo','taladro','angulo_grados','longitud_m','taco_m','carga_m','kg','salida_ms']];E.LH.hojaSimba(R,!!R.anillos).forEach(function(x){rows.push(['A'+x.anillo,x.id,x.ang.toFixed(1),x.len.toFixed(2),x.taco.toFixed(2),x.carg.toFixed(2),x.kg.toFixed(1),x.ms])});
   dlText('Hoja-Simba-'+(D.nombre||'tajo').replace(/[^\w\-]+/g,'-').slice(0,40)+'.csv','\ufeff'+rows.map(function(r){return r.join(';')}).join('\n'))}
@@ -694,7 +748,7 @@ async function boot(){if(!sb){gate('<h2>No se pudo cargar</h2><p class="mute">Re
   var mm=r.data&&r.data[0];if(!mm){gate('<h2>Sin mina</h2><p class="mute">Crea tu mina o únete con un código en la app.</p><a class="btn" href="../">Ir a la app</a>');return}
   S.mina=mm.minas;S.rol=mm.rol;try{var p=await sb.rpc('pro_activo',{m:S.mina.id});S.pro=!!p.data}catch(e){S.pro=false}
   $('#app').hidden=false;$('#gate').hidden=true;renderSteps();renderAll();setTimeout(bootOk,3000);
-  try{await cargar()}catch(e){toast('No se pudieron cargar los datos de la mina')}renderAll()}
+  try{await cargar()}catch(e){toast('No se pudieron cargar los datos de la mina')}colaSync();renderAll()}
 boot();
 })();
 </script></body></html>

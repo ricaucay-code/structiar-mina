@@ -32,7 +32,7 @@ var CORTES={
 function defaults(){return {
  nombre:'',labor:'',frente:'',responsable:'',
  geom:{forma:'herradura',W:3.0,H:3.0,L:2.4,eff:90,rumbo:0},
- malla:{d:38,B:0.8,E:0.9,taco:0.5,acopl:0.9,contornoPct:50,zapTaco:0.3},
+ malla:{d:38,B:0.8,E:0.9,taco:0.5,acopl:0.9,contornoPct:50,zapTaco:0.3,sbAbajo:1.25,evCont:0.8},
  corte:{tipo:'quemado2',nAliv:2,dAliv:64,dx:0,y:null},
  sequia:'no',
  roca:{rmr:55,ucs:100,estructura:'moderada',dens:2.7,agua:'seco',c:null,cModo:'auto',q:null,st:null,ei:null,vp:null},
@@ -76,7 +76,7 @@ function cargaLineal(d,acopl,rho){var dm=d/1000*acopl;return PI/4*dm*dm*rho*1000
 function cartuchoKg(p){if(!p.cart)return 0;var dm=p.cart[0]*0.0254,lm=p.cart[1]*0.0254;return PI/4*dm*dm*lm*p.rho*1000}
 
 /* ---------- corte ---------- */
-function corteAvance(dAlivMM,n){var phi=dAlivMM/1000*Math.sqrt(Math.max(1,n));return {phiEq:phi,Lmax:0.15+34.1*phi-39.4*phi*phi}}
+function corteAvance(dAlivMM,n){var phi=dAlivMM/1000*Math.sqrt(Math.max(1,n)),pc=Math.min(0.25,Math.max(0.02,phi));return {phiEq:phi,Lmax:0.15+34.1*pc-39.4*pc*pc,fueraRango:phi>0.25||phi<0.05}}
 function generarCorte(d,cx,cy){var c=d.corte,phi=corteAvance(c.dAliv,c.nAliv).phiEq,h=[],dd=d.malla.d/1000;
   // alivios
   var na=Math.max(0,Math.round(c.nAliv)),sepA=c.dAliv/1000*1.15;
@@ -103,7 +103,7 @@ function cunaV(d){var L=+d.geom.L||2.4,W=+d.geom.W||3,H=+d.geom.H||3,t30=Math.ta
   for(var k=0;k<nV;k++){var Lk=k===0?(nV===1?L:L*0.5):(k===nV-1?L:L*0.75),x=0.1+Lk*t30;vs.push({L:Lk,x:x,ang:30,B:k?x-vs[k-1].x:x})}
   vs.sort(function(a,b){return a.x-b.x});var util=W/2-0.45,cabe=vs[vs.length-1].x<=util,Lmax=(util-0.1)/t30;
   var hc=Math.min(1.6,Math.max(0.9,0.35*H)),filas=Math.max(2,Math.round(hc/0.5)+1);return {vs:vs,filas:filas,dy:hc/(filas-1),cabe:cabe,Lmax:Lmax}}
-function lmaxPhi(phi){return 0.15+34.1*phi-39.4*phi*phi}
+function lmaxPhi(phi){var p=Math.min(0.25,phi);return 0.15+34.1*p-39.4*p*p}
 function phiNecesario(L){for(var p=0.02;p<=0.43;p+=0.001)if(lmaxPhi(p)>=L)return p;return null}
 /* comparador de cueles para la sección y profundidad del diseño */
 function variantesCuele(d,cat){var g=d.geom,L=+g.L,out=[],dA=+d.corte.dAliv||64,opc=[];
@@ -139,6 +139,44 @@ function revisionLit(R,d){var g=d.geom,A=R.A,kr=R.kr,ex=R.prod,rws=(ex.rws||100)
   rows.push({k:'av',n:'Avance por disparo',dis:av,ref:+ref.av>0?+ref.av:null,u:'m',rango:'≥ 0,9 de la perforación',lo:0.9*g.L,hi:g.L,fuente:'Eficiencia esperada 90–95 % con cuele bien dimensionado'});
   rows.forEach(function(r){r.eDis=est(r.dis,r.lo,r.hi);r.eRef=r.ref==null?null:est(r.ref,r.lo,r.hi)});return {rows:rows,Nlit:Nlit,qLit:qLit,clase:cl}}
 
+/* KPIs de un disparo real contra la sección de diseño */
+function kpiDisparo(x,geom){var perf=+x.perf||0,av=+x.avance||0,A=area(geom),Ar=(+x.ancho>0&&+x.alto>0)?area({forma:geom.forma,W:+x.ancho,H:+x.alto}):null,vol=A*av,tal=+x.tal||0;
+  return {fecha:x.fecha,eff:perf?av/perf*100:null,sobre:Ar!=null?(Ar-A)/A*100:null,kgm3:vol&&+x.kg?+x.kg/vol:null,kgm:av&&+x.kg?+x.kg/av:null,mpm3:vol&&tal&&perf?tal*perf/vol:null,
+    fall:x.fall!=null&&x.fall!==''?+x.fall:(x.qa&&x.qa.fall!=null?+x.qa.fall:null),hcf:x.hcf!=null&&x.hcf!==''?+x.hcf:null,acu:x.acu!=null&&x.acu!==''?+x.acu:null,culote:x.culote!=null&&x.culote!==''?+x.culote:null}}
+var KPIS=[['eff','Eficiencia de avance','%',1],['sobre','Sobreexcavación de área','%',-1],['kgm3','Factor de carga real','kg/m³',0],['kgm','Explosivo por metro de avance','kg/m',-1],['mpm3','Perforación específica real','m/m³',-1],['culote','Culote (taco sin romper)','m',-1],['fall','Tiros fallados','u',-1],['hcf','Medias cañas visibles (HCF)','%',1],['acu','Tiempo de acuñadura','min',-1]];
+function kpiResumen(list,geom){var ks=list.slice().sort(function(a,b){return String(a.fecha).localeCompare(String(b.fecha))}).map(function(x){return kpiDisparo(x,typeof geom==='function'?geom(x):geom)}),nB=Math.min(5,Math.ceil(ks.length/2));
+  function media(arr,k){var v=arr.map(function(o){return o[k]}).filter(function(v){return v!=null&&isFinite(v)});return v.length?{m:v.reduce(function(a,b){return a+b},0)/v.length,n:v.length}:null}
+  return {n:ks.length,serie:ks,filas:KPIS.map(function(k){var b=media(ks.slice(0,nB),k[0]),r=media(ks.slice(-nB),k[0]),t=media(ks,k[0]),mej=null;if(b&&r&&ks.length>=4&&k[3]!==0){var dv=(r.m-b.m)*(k[3]);mej=Math.abs(r.m-b.m)<1e-9?0:dv>0?1:-1}
+    return {k:k[0],n:k[1],u:k[2],base:b,rec:r,tot:t,mejora:mej}})}}
+/* registro de fórmulas: fuente, estado de verificación y rango de validez.
+   V = verificado en al menos una fuente; VP = verificado en parte (ejemplo o aspecto cualitativo); NV = forma canónica sin verificar contra el texto primario */
+var REFS={
+ lmax:{n:'Avance máximo por alivio',f:'L = 0,15 + 34,1·Ø − 39,4·Ø²',src:'Holmberg (1982), vía López Jimeno',est:'NV',rango:'Ø equivalente 50–250 mm, desviación ≤ 2 %'},
+ phieq:{n:'Alivio equivalente',f:'Ø = Ø₀·√n',src:'Holmberg; Zare y Bruland (2006)',est:'NV',rango:'Alivios agrupados'},
+ x95:{n:'Avance esperado',f:'X = 0,95·L',src:'López Jimeno (apuntes)',est:'VP',rango:'Cuele paralelo bien perforado'},
+ b1:{n:'Primera sección del cuele',f:'a = 1,5·Ø',src:'Holmberg; OCW Unican',est:'V',rango:'Perforación precisa'},
+ bsec:{n:'Secciones siguientes del cuele',f:'B = 0,088·√(W·q·s / (d·c)) − error; B ≤ 2·W',src:'Holmberg; ejemplo EHU',est:'VP',rango:'Ángulo de apertura < 1,6 rad'},
+ stop:{n:'Fin de los cuadrantes',f:'lado del último cuadrante ≥ √L',src:'Holmberg',est:'NV',rango:'Máximo 4 secciones'},
+ lang:{n:'Burden por zona',f:'B = 0,9·√(q·s / (c̄·f·S/B)) − (0,05 + 0,03·L)',src:'Langefors y Kihlström; Holmberg',est:'V',rango:'Tabla f–S/B por zona'},
+ cbar:{n:'Constante de roca corregida',f:'c̄ = c + 0,05 (B ≥ 1,4 m) · c + 0,07/B (B < 1,4 m)',src:'Langefors y Kihlström',est:'V',rango:'c típico 0,2–0,6 kg/m³'},
+ fsb:{n:'Factores f y S/B',f:'Zapateras 1,45/1 · destroza arriba 1,45/1,25 · abajo 1,20/1,25 o 1,75 · contorno 1,20/1,25',src:'Holmberg; López Jimeno; INL/CSM',est:'V',rango:'S/B de destroza abajo en conflicto entre fuentes'},
+ rec:{n:'Recorte del contorno',f:'E = 15–16·d · E/V = 0,8 · q = 90·d² kg/m',src:'Persson, Holmberg y Lundborg; Ramulu',est:'V',rango:'Diámetro 25–48 mm'},
+ ev:{n:'Relación E/V del contorno',f:'0,6 ≤ E/V ≤ 1,0',src:'TUST 2023 (aprendizaje automático); USBR',est:'V',rango:'Túneles y galerías'},
+ q14:{n:'Carga específica de referencia',f:'q = (14/A + 0,8)·Kr² (LFB) → ANFO ÷ 0,84',src:'Langefors y Kihlström vía Ramulu',est:'VP',rango:'Secciones 5–40 m²; base explosiva sin confirmar'},
+ qcu:{n:'Carga específica del cuele',f:'7–10 kg/m³ o más',src:'Ramulu (InTech)',est:'V',rango:'Cueles paralelos'},
+ base:{n:'Base energética',f:'s = RWS / 100 respecto del ANFO',src:'Holmberg; López Jimeno',est:'NV',rango:'Conversión LFB ↔ ANFO (0,84) sin verificar'},
+ ppv:{n:'Ley de vibración',f:'PPV = K·(D/√Q)^−β',src:'Práctica estándar; SME 2013',est:'V',rango:'Solo dentro del rango de distancia escalada medido'},
+ hp:{n:'Daño en el contorno (campo cercano)',f:'Holmberg–Persson',src:'Holmberg y Persson (1979); NIOSH modificado',est:'NV',rango:'Indicador relativo hasta calibrar; error matemático señalado por Hustrulid y Lu (2002)'},
+ ppvc:{n:'Velocidad crítica',f:'PPVc = σt·Vp / E; sobreexcavación ≈ 2–3,5 × PPVc (se usa 3)',src:'Persson; Singh',est:'NV',rango:'Usar propiedades del macizo'},
+ kuz:{n:'Fragmentación',f:'Kuz-Ram (Cunningham)',src:'Cunningham (1987, 2005)',est:'NV',rango:'Calibrado en bancos: no aplica bien a frentes de desarrollo'}};
+function formulasUsadas(R,d){var g=d.geom,dmm=+d.malla.d,phi=R.phiEq,out=[];function add(id,ok,val){var r=REFS[id];out.push({id:id,n:r.n,f:r.f,src:r.src,est:r.est,rango:r.rango,ok:ok,val:val||''})}
+  var cu=d.corte.tipo!=='cuna';
+  if(cu){add('phieq',null,Math.round(phi*1000)+' mm');add('lmax',phi>=0.05&&phi<=0.25,'Ø '+Math.round(phi*1000)+' mm → '+R.Lmax.toFixed(2)+' m');add('b1',null);add('bsec',null);add('stop',null)}
+  add('x95',R.Lmax>=g.L,(0.95*Math.min(g.L,R.Lmax)).toFixed(2)+' m');add('lang',null,'B sugerido '+R.Bsug.toFixed(2)+' m');add('cbar',R.c>=0.2&&R.c<=0.6,'c '+R.c.toFixed(2)+' → c̄ '+R.cbar.toFixed(2));add('fsb',null,'S/B abajo '+(+d.malla.sbAbajo||1.25));
+  add('rec',dmm>=25&&dmm<=48,'d '+dmm+' mm');if(R.contorno&&R.contorno.EV)add('ev',R.contorno.EV>=0.6&&R.contorno.EV<=1.0,'E/V '+R.contorno.EV.toFixed(2));
+  add('q14',R.A>=5&&R.A<=40,'A '+R.A.toFixed(1)+' m²');if(R.qCuele!=null)add('qcu',R.qCuele>=7,R.qCuele.toFixed(1)+' kg/m³');add('base',null,(R.prod.nombre||'')+' · RWS '+(R.prod.rws||100));
+  add('ppv',null);add('hp',null);if(R.ppvc)add('ppvc',null,Math.round(R.ppvc.ppvc)+' mm/s');add('kuz',false,'frente de desarrollo');return out}
+
 /* ---------- diseño completo ---------- */
 function num(v,def,a,b){v=+v;return clamp(isFinite(v)&&v!==0?v:def,a,b)}
 function disenar(d,cat){d=JSON.parse(JSON.stringify(d));var g=d.geom,ml=d.malla,ro=d.roca,ex=prod(d.exp.id,cat);
@@ -147,11 +185,14 @@ function disenar(d,cat){d=JSON.parse(JSON.stringify(d));var g=d.geom,ml=d.malla,
   var q=cargaLineal(ml.d,ml.acopl,ex.rho);
   // burden sugerido (Langefors simplificado, corregido por roca)
   var s=ex.rws/100,f=1.45,EB=(ml.E/ml.B)||1.25,G0=GEOf(),CR=G0?G0.cRoca({modo:ro.cModo,c:ro.c,q:ro.q,ucs:ro.ucs,kr:kr}):{modo:'auto',c:0.4*kr*kr,cbar:0.4*kr*kr+0.05,txt:''},cU=CR.modo!=='auto'?1:null,c=CR.c,cbar=CR.cbar;
-  var Bmax=0.9*Math.sqrt(q*s/(cbar*f*EB)),errP=0.05+0.03*g.L,Bsug=Math.max(0.3,Bmax-errP);
+  var cB=function(B){return c+(B>=1.4?0.05:0.07/Math.max(0.3,B))},Bmax=0.9*Math.sqrt(q*s/((c+0.05)*f*EB));for(var itc=0;itc<4;itc++){cbar=cB(Bmax);Bmax=0.9*Math.sqrt(q*s/(cbar*f*EB))}
+  var errP=0.05+0.03*g.L,Bsug=Math.max(0.3,Bmax-errP);
+  /* burden por zona (Holmberg): f y S/B de la tabla; destroza hacia abajo configurable (1,25 López Jimeno / 1,75 INL) */
+  var zonasH=[['Zapateras',1.45,1],['Destroza hacia arriba / horizontal',1.45,1.25],['Destroza hacia abajo',1.2,+ml.sbAbajo||1.25],['Contorno sin recorte',1.2,1.25]].map(function(z){var Bz=0.9*Math.sqrt(q*s/((c+0.05)*z[1]*z[2]));for(var k=0;k<4;k++)Bz=0.9*Math.sqrt(q*s/(cB(Bz)*z[1]*z[2]));var Bp=Math.max(0.25,Bz-errP);return {zona:z[0],f:z[1],sb:z[2],Bmax:Bz,B:Bp,E:Bp*z[2],cbar:cB(Bz)}});
   var cy=(d.corte.y==null?Math.min(Math.max(1.2,g.H*0.3),g.H-g.W/2+0.2):d.corte.y),cx=d.corte.dx||0;
   var C=generarCorte(d,cx,cy,{q:q,s:s,c:c}),holes=C.holes.slice();
   // contorno y zapateras
-  var espC=15*dm;var margen=0.15,Bc=Math.min(ml.B,1.25*espC);
+  var espC=15*dm;var margen=0.15,evC=Math.min(1.0,Math.max(0.6,+ml.evCont||0.8)),Bc=Math.min(ml.B,espC/evC);
   contorno(g,espC,margen).forEach(function(p){holes.push({x:p.x,y:p.y,t:'contorno',g:p.z==='tabla'?'Tablas':p.z==='hombro'?'Hombros':'Corona'})});
   var nz=Math.max(2,Math.ceil((g.W-2*margen)/ml.E)+1);for(var i=0;i<nz;i++)holes.push({x:-(g.W/2-margen)+(g.W-2*margen)*i/(nz-1),y:0.15,t:'zapatera',g:'Zapateras'});
   // destrozo: malla ordenada. Columnas alineadas con las zapateras (cada E) y filas cada B desde el piso;
@@ -197,10 +238,10 @@ function disenar(d,cat){d=JSON.parse(JSON.stringify(d));var g=d.geom,ml=d.malla,
   // kg por periodo
   var porP={};cargados.forEach(function(h){porP[h.p]=porP[h.p]||{p:h.p,ms:h.ms,n:0,kg:0,grupos:{}};porP[h.p].n++;porP[h.p].kg+=h.kg;porP[h.p].grupos[h.g]=1});
   var periodos=Object.keys(porP).map(function(k){var o=porP[k];o.grupo=Object.keys(o.grupos).join(' + ');delete o.grupos;return o}).sort(function(a,b){return a.p-b.p});
-  var res={cR:CR,c:c,cbar:cbar,cUser:cU!=null,Bmax:Bmax,errP:errP,f:f,d:d,prod:ex,A:A,perim:perimetro(g),av:av,vol:vol,ton:ton,kr:kr,q:q,Bsug:Bsug,corte:C,phiEq:corteAvance(d.corte.dAliv,d.corte.nAliv).phiEq,
+  var res={zonasH:zonasH,cR:CR,c:c,cbar:cbar,cUser:cU!=null,Bmax:Bmax,errP:errP,f:f,d:d,prod:ex,A:A,perim:perimetro(g),av:av,vol:vol,ton:ton,kr:kr,q:q,Bsug:Bsug,corte:C,phiEq:corteAvance(d.corte.dAliv,d.corte.nAliv).phiEq,
     Lmax:corteAvance(d.corte.dAliv,d.corte.nAliv).Lmax,holes:holes,nCarg:cargados.length,nAl:nAl,kg:kg,fc:vol?kg/vol:0,pf:ton?kg/ton:0,
     perfM:holes.length*g.L,periodos:periodos,cy:cy,cx:cx};
-  res.fcObj=(14/A+0.8)*kr*kr;res.energia=kg*3.7*ex.rws/100;
+  res.fcObjANFO=(14/A+0.8)*kr*kr/0.84;res.fcObj=res.fcObjANFO/((ex.rws||100)/100);res.energia=kg*3.7*ex.rws/100;
   analizar(res);costos(res);return res}
 
 /* ---------- análisis ---------- */
@@ -222,7 +263,7 @@ function analizar(R){var d=R.d,v=d.vibr,ml=d.malla,g=d.geom;
   R.distMin=Math.sqrt(kr.nom)*Math.pow(v.lim/v.K,-1/v.beta);
   // daño Holmberg–Persson en contorno: radio donde PPV = umbral de rotura
   var GEO=GEOf(),PC=GEO?GEO.ppvCritica(d.roca):null;R.ppvc=PC;
-  var um=PC?PC.ppvc:umbralDano(d.roca.rmr),rot=PC?4*PC.ppvc:um*3,Khp=700,al=0.7,qc=R.q*ml.contornoPct/100,Hc=Math.max(0.3,g.L-ml.taco);
+  var um=PC?PC.ppvc:umbralDano(d.roca.rmr),rot=PC?3*PC.ppvc:um*3,Khp=700,al=0.7,qc=R.q*ml.contornoPct/100,Hc=Math.max(0.3,g.L-ml.taco);
   function hp(r){return Khp*Math.pow(qc/r*2*Math.atan(Hc/(2*r)),al)}
   var lo=0.01,hi=3;for(var i=0;i<50;i++){var mid=(lo+hi)/2;if(hp(mid)>rot)lo=mid;else hi=mid}
   var rRot=lo,margen=0.15,l2=0.01,h2=6;for(var j=0;j<50;j++){var m2=(l2+h2)/2;if(hp(m2)>um)l2=m2;else h2=m2}
@@ -244,7 +285,19 @@ function analizar(R){var d=R.d,v=d.vibr,ml=d.malla,g=d.geom;
   // energía por zona
   var z={};R.holes.forEach(function(h){if(h.t==='alivio')return;z[h.g]=z[h.g]||{n:0,kg:0};z[h.g].n++;z[h.g].kg+=h.kg});R.zonas=z;
   // QA/QC
+  // contorno: relación E/V medida en el diseño y carga lineal contra el mínimo de recorte 90·d²
+  var cont=R.holes.filter(function(h){return h.t==='contorno'&&h.g!=='Zapateras'}),inter=R.holes.filter(function(h){return h.t==='destrozo'||h.t==='arranque'});
+  var Vs=cont.map(function(h){return inter.reduce(function(m,o){return Math.min(m,Math.hypot(o.x-h.x,o.y-h.y))},99)}).filter(function(v){return v<9}),Vm=Vs.length?Vs.reduce(function(a,b){return a+b},0)/Vs.length:null;
+  var espC2=15*ml.d/1000,qC=R.q*ml.contornoPct/100,qMin=90*Math.pow(ml.d/1000,2);
+  R.contorno={E:espC2,V:Vm,EV:Vm?espC2/Vm:null,q:qC,qMin:qMin,ratio:qC/qMin,pctSug:Math.max(5,Math.round(qMin*1.3/R.q*100))};
+  // carga específica del cuele: secciones 1 y 2 sobre el volumen de su cuadrante
+  var cuS=R.corte&&R.corte.secs&&R.corte.secs.length&&!R.corte.cuna?R.corte.secs[Math.min(1,R.corte.secs.length-1)]:null,kgCu=R.holes.filter(function(h){return h.t==='arranque'&&cuS&&h.sec<=cuS.n}).reduce(function(a,h){return a+h.kg},0);
+  R.qCuele=cuS?kgCu/(cuS.W*cuS.W*g.L):null;
+  R.formulas=formulasUsadas(R,d);
   var al2=[];function chk(ok,warn,txt,acc,k){al2.push({nivel:ok?'ok':warn?'aviso':'error',txt:txt,acc:acc||'',k:k})}
+  chk(R.contorno.ratio<=2,true,'Carga lineal del contorno '+r2(qC)+' kg/m; mínimo de recorte 90·d² = '+r2(qMin)+' kg/m ('+r2(R.contorno.ratio)+'×).',R.contorno.ratio>2?'Para voladura controlada baja la carga de contorno a ≈ '+R.contorno.pctSug+' % o usa cartuchos desacoplados / explosivo de baja densidad.':'','cont');
+  if(R.contorno.EV)chk(R.contorno.EV>=0.6&&R.contorno.EV<=1.0,true,'Relación espaciamiento / burden del contorno E/V = '+r2(R.contorno.EV)+' (E '+r2(espC2)+' m, V medido '+r2(Vm)+' m). Rango de recorte 0,6–1,0.','Ajusta el burden de la fila vecina al contorno.','cont');
+  chk(!(R.phiEq>0.25||R.phiEq<0.05),true,'Alivio equivalente '+Math.round(R.phiEq*1000)+' mm'+(R.phiEq>0.25||R.phiEq<0.05?': fuera del rango de la fórmula de Holmberg (50–250 mm); el avance máximo se limita y debe validarse en campo.':', dentro del rango de la fórmula de avance.'),'','corte');
   var bd=ml.B/(ml.d/1000);chk(bd>=18&&bd<=32,bd>=14&&bd<=38,'Relación burden/diámetro '+Math.round(bd)+'×. Ideal 18–32×.','Ajusta el burden o el diámetro.','B');
   var eb=ml.E/ml.B;chk(eb>=1.0&&eb<=1.5,eb>=0.85&&eb<=1.7,'Relación espaciamiento/burden '+r2(eb)+'. Ideal 1.0–1.5.','Acerca espaciamiento y burden.','E');
   var tc=ml.taco/(ml.d/1000);chk(tc>=10&&tc<=22,tc>=7&&tc<=28,'Taco/diámetro '+Math.round(tc)+'×. Ideal 10–22× (evita soplado y bancos).','Ajusta el taco.','taco');
@@ -293,7 +346,7 @@ function ajustarVibracion(lect){var pts=(lect||[]).filter(function(s){return s.p
 function eficienciaReal(disparos){var v=(disparos||[]).filter(function(x){return +x.perf>0&&+x.avance>0}).map(function(x){return x.avance/x.perf*100});
   if(!v.length)return null;var m=v.reduce(function(a,b){return a+b})/v.length;return {media:m,n:v.length}}
 
-var API={variantesCuele:variantesCuele,revisionLit:revisionLit,cunaV:cunaV,lmaxPhi:lmaxPhi,phiNecesario:phiNecesario,CATALOGO:CATALOGO,SERIES:SERIES,CORTES:CORTES,defaults:defaults,disenar:disenar,sensibilidad:sensibilidad,comparar:comparar,planCarga:planCarga,
+var API={kpiDisparo:kpiDisparo,kpiResumen:kpiResumen,KPIS:KPIS,REFS:REFS,formulasUsadas:formulasUsadas,variantesCuele:variantesCuele,revisionLit:revisionLit,cunaV:cunaV,lmaxPhi:lmaxPhi,phiNecesario:phiNecesario,CATALOGO:CATALOGO,SERIES:SERIES,CORTES:CORTES,defaults:defaults,disenar:disenar,sensibilidad:sensibilidad,comparar:comparar,planCarga:planCarga,
   area:area,dentro:dentro,ppv:ppv,qAdm:qAdm,ajustarVibracion:ajustarVibracion,eficienciaReal:eficienciaReal,corteAvance:corteAvance,cargaLineal:cargaLineal,cartuchoKg:cartuchoKg,kRoca:kRoca};
 if(typeof module!=='undefined'&&module.exports)module.exports=API;else root.SVE=API;
 })(this);
