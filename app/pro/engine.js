@@ -141,9 +141,10 @@ function revisionLit(R,d){var g=d.geom,A=R.A,kr=R.kr,ex=R.prod,rws=(ex.rws||100)
 
 /* KPIs de un disparo real contra la sección de diseño */
 function kpiDisparo(x,geom){var perf=+x.perf||0,av=+x.avance||0,A=area(geom),Ar=(+x.ancho>0&&+x.alto>0)?area({forma:geom.forma,W:+x.ancho,H:+x.alto}):null,vol=A*av,tal=+x.tal||0;
-  return {fecha:x.fecha,eff:perf?av/perf*100:null,sobre:x.perfil&&x.perfil.sobrePct!=null?+x.perfil.sobrePct:(Ar!=null?(Ar-A)/A*100:null),kgm3:vol&&+x.kg?+x.kg/vol:null,kgm:av&&+x.kg?+x.kg/av:null,mpm3:vol&&tal&&perf?tal*perf/vol:null,
+  var ob=x.obCMS!=null&&x.obCMS!==''?+x.obCMS:null,ub=x.ubCMS!=null&&x.ubCMS!==''?+x.ubCMS:null,vc=+x.volCMS>0?+x.volCMS:null,volEsp=av?A*av*(1+(ob||0)/100-(ub||0)/100):null;
+  return {volRatio:vc&&volEsp&&ob!=null?vc/volEsp:null,sub:ub!=null?ub:(x.perfil&&x.perfil.subPct!=null?+x.perfil.subPct:null),fecha:x.fecha,eff:perf?av/perf*100:null,sobre:ob!=null?ob:x.perfil&&x.perfil.sobrePct!=null?+x.perfil.sobrePct:(Ar!=null?(Ar-A)/A*100:null),kgm3:vol&&+x.kg?+x.kg/vol:null,kgm:av&&+x.kg?+x.kg/av:null,mpm3:vol&&tal&&perf?tal*perf/vol:null,
     fall:x.fall!=null&&x.fall!==''?+x.fall:(x.qa&&x.qa.fall!=null?+x.qa.fall:null),hcf:x.hcf!=null&&x.hcf!==''?+x.hcf:null,acu:x.acu!=null&&x.acu!==''?+x.acu:null,culote:x.culote!=null&&x.culote!==''?+x.culote:null}}
-var KPIS=[['eff','Eficiencia de avance','%',1],['sobre','Sobreexcavación de área','%',-1],['kgm3','Factor de carga real','kg/m³',0],['kgm','Explosivo por metro de avance','kg/m',-1],['mpm3','Perforación específica real','m/m³',-1],['culote','Culote (taco sin romper)','m',-1],['fall','Tiros fallados','u',-1],['hcf','Medias cañas visibles (HCF)','%',1],['acu','Tiempo de acuñadura','min',-1]];
+var KPIS=[['eff','Eficiencia de avance','%',1],['sobre','Sobreexcavación','%',-1],['sub','Subexcavación','%',-1],['kgm3','Factor de carga real','kg/m³',0],['kgm','Explosivo por metro de avance','kg/m',-1],['mpm3','Perforación específica real','m/m³',-1],['culote','Culote (taco sin romper)','m',-1],['fall','Tiros fallados','u',-1],['hcf','Medias cañas visibles (HCF)','%',1],['acu','Tiempo de acuñadura','min',-1]];
 function kpiResumen(list,geom){var ks=list.slice().sort(function(a,b){return String(a.fecha).localeCompare(String(b.fecha))}).map(function(x){return kpiDisparo(x,typeof geom==='function'?geom(x):geom)}),nB=Math.min(5,Math.ceil(ks.length/2));
   function media(arr,k){var v=arr.map(function(o){return o[k]}).filter(function(v){return v!=null&&isFinite(v)});return v.length?{m:v.reduce(function(a,b){return a+b},0)/v.length,n:v.length}:null}
   return {n:ks.length,serie:ks,filas:KPIS.map(function(k){var b=media(ks.slice(0,nB),k[0]),r=media(ks.slice(-nB),k[0]),t=media(ks,k[0]),mej=null;if(b&&r&&ks.length>=4&&k[3]!==0){var dv=(r.m-b.m)*(k[3]);mej=Math.abs(r.m-b.m)<1e-9?0:dv>0?1:-1}
@@ -271,6 +272,8 @@ function analizar(R){var d=R.d,v=d.vibr,ml=d.malla,g=d.geom;
   R.estr=GEO?GEO.analizarLabor(d.estructuras,+g.rumbo||0):[];var fx=R.estr.reduce(function(m,x){return Math.max(m,x.factor)},1);
   R.dano.factorEstr=fx;R.dano.sobre=R.dano.sobre*fx+(fx>1?0.03:0);R.dano.sobreMax=R.dano.sobreMax*fx;
   R.dano.vol=R.dano.sobre*R.perim*R.av;
+  /* realce (look-out) del contorno: 0,10 m + 0,03 m por metro perforado (Holmberg); en promedio aporta la mitad del realce como espesor */
+  var lo=0.10+0.03*g.L,esp=lo/2+R.dano.sobre;R.dano.realce=lo;R.dano.obPct=esp*R.perim/R.A*100;R.dano.obRealcePct=lo/2*R.perim/R.A*100;
   // Kuz-Ram
   var A=factorA(d.roca),K=R.fc,Q=R.nCarg?R.kg/R.nCarg:0,rws=R.prod.rws;
   var X50=A*Math.pow(K||0.1,-0.8)*Math.pow(Q||0.1,1/6)*Math.pow(115/rws,19/30);// cm
