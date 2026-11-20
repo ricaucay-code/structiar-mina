@@ -40,7 +40,7 @@ function defaults(){return {
  exp:{id:'emul-cart',fondo:null},
  tiempos:{serie:'MS',disp:3},
  vibr:{dist:30,lim:100,K:1140,beta:1.6},
- costos:{perf:2.2,rima:6,det:3.2,booster:0,linea:15,manoMin:5,manoHH:9.5,mecha:0},
+ costos:{perf:2.2,rima:6,det:3.2,detElec:22,booster:0,linea:15,manoMin:5,manoHH:9.5,mecha:0},
  sismos:[],
  ref:{n:null,kg:null,av:null,espC:null,rws:null}
 }}
