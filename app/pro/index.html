@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<html lang="es"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://qxcqzdytpcwgzsaaabsx.supabase.co wss://qxcqzdytpcwgzsaaabsx.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'"><script>if(window.top!==window.self){document.documentElement.style.display='none';try{window.top.location=window.self.location}catch(e){}}</script><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Structiar · Voladura Pro</title>
 <meta name="theme-color" content="#0E2233"><link rel="icon" href="../icons/favicon.png"><link rel="manifest" href="../manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -113,7 +113,7 @@ td input{min-height:30px;padding:3px 6px;max-width:90px}
   </main>
 </div>
 <div class="toast" id="toast" hidden></div>
-<script src="../vendor/supabase-2.45.4.js"></script>
+<script src="../vendor/supabase-2.118.0.js"></script>
 <script src="config.js?v=20261118c"></script>
 <script src="engine.js?v=20261120b"></script>
 <script src="engine-geo.js?v=20261118c"></script>
@@ -802,7 +802,7 @@ async function cargar(){var m=S.mina.id;
 function svgPng(svgEl,w){return new Promise(function(res){try{var s=new XMLSerializer().serializeToString(svgEl).replace(/var\(--c-arr\)/g,'#E07B22').replace(/var\(--c-ayu\)/g,'#D9A21B').replace(/var\(--c-des\)/g,'#16A09A').replace(/var\(--c-con\)/g,'#2F6FD6').replace(/var\(--c-zap\)/g,'#8A4FD1').replace(/var\(--c-seq\)/g,'#7A8794').replace(/var\(--c-ali\)/g,'#ffffff');
   var vb=svgEl.viewBox.baseVal,h=w*vb.height/vb.width,img=new Image();img.onload=function(){var c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res({data:c.toDataURL('image/png'),w:w,h:h})};img.onerror=function(){res(null)};
   img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s)}catch(e){res(null)}})}
-function loadJsPDF(){return new Promise(function(res,rej){if(window.jspdf)return res(window.jspdf.jsPDF);var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';s.integrity='sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk';s.crossOrigin='anonymous';s.onload=function(){res(window.jspdf.jsPDF)};s.onerror=rej;document.head.appendChild(s)})}
+function loadJsPDF(){return new Promise(function(res,rej){if(window.jspdf)return res(window.jspdf.jsPDF);var s=document.createElement('script');s.src='../vendor/jspdf-4.2.1.umd.min.js';s.onload=function(){res(window.jspdf.jsPDF)};s.onerror=rej;document.head.appendChild(s)})}
 function T(s){return String(s==null?'':s).replace(/[≥]/g,'>=').replace(/[≤]/g,'<=').replace(/[–—]/g,'-').replace(/[×]/g,'x').replace(/[√]/g,'raiz ').replace(/[^\x00-\xFF]/g,'')}
 /* DXF R12 (AutoCAD / topografía): perfil, barrenos por capa y etiquetas; unidades en metros */
 function dxf(){var o=['0','SECTION','2','ENTITIES'];function capa(l){return String(l||'0').toUpperCase().replace(/[^A-Z0-9_]/g,'_').slice(0,31)}

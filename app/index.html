@@ -1,4 +1,4 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0E2233"><meta name="referrer" content="strict-origin-when-cross-origin"><title>Structiar Mina</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/favicon.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Structiar"><style>*{box-sizing:border-box}body{margin:0}</style></head><body>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://qxcqzdytpcwgzsaaabsx.supabase.co wss://qxcqzdytpcwgzsaaabsx.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'"><script>if(window.top!==window.self){document.documentElement.style.display='none';try{window.top.location=window.self.location}catch(e){}}</script><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0E2233"><meta name="referrer" content="strict-origin-when-cross-origin"><title>Structiar Mina</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/favicon.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Structiar"><style>*{box-sizing:border-box}body{margin:0}</style></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -438,7 +438,7 @@ details.calc pre{white-space:pre-wrap;font:12px/1.65 var(--f-mono);background:va
   <div class="brand"><img src="icons/icon-192.png" alt="" width="64" height="64" style="display:block;margin:0 auto 10px;border-radius:14px">STRUCT<b>IAR</b> MINA<small>Gestión de mina · prueba gratis de 7 días</small></div>
   <div class="card" id="authCard"></div>
 </div></div>
-<script src="vendor/supabase-2.45.4.js"></script>
+<script src="vendor/supabase-2.118.0.js"></script>
 <script>
 (function(){'use strict';
 var S=window.STRUCTIAR_CFG||{};
@@ -590,7 +590,7 @@ document.addEventListener('submit',async function(e){var f=e.target.closest('#au
     else if(k==='reset'){var r3=await sb.auth.resetPasswordForEmail($('#aEmail').value.trim(),{redirectTo:location.origin+location.pathname});if(r3.error)throw r3.error;authMode='login';authMsg={t:'Si el correo tiene cuenta, te llegó un enlace para crear una nueva contraseña.'};renderAuth();return}
     else if(k==='newpass'){var r4=await sb.auth.updateUser({password:$('#aPass').value});if(r4.error)throw r4.error;authMode='login';authMsg={t:'Contraseña actualizada.'};await afterAuth();return}
     else if(k==='crear'||k==='unir'){var s=(await sb.auth.getUser()).data.user,nm2=(s&&s.user_metadata&&s.user_metadata.nombre)||(function(){try{return localStorage.getItem('structiar-nombre')}catch(x){return ''}})()||email.split('@')[0];
-      var r5=k==='crear'?await sb.rpc('crear_mina',{p_nombre:$('#aMina').value,p_nombre_usuario:nm2}):await sb.rpc('unirse_mina',{p_codigo:$('#aCode').value,p_nombre_usuario:nm2});if(r5.error)throw r5.error;await afterAuth();return}
+      var r5=k==='crear'?await sb.rpc('crear_mina',{p_nombre:$('#aMina').value,p_nombre_usuario:nm2}):await sb.rpc('unirse_mina',{p_codigo:$('#aCode').value,p_nombre_usuario:nm2});if(r5.error)throw r5.error;if(!r5.data)throw new Error('Código no válido. Revisa el código que te dio el administrador de tu mina.');await afterAuth();return}
   }catch(err){authMsg={err:1,t:errMsg(err)};if(k==='crear'||k==='unir')renderSetup();else renderAuth()}finally{btn.disabled=false}});
 async function init(){
   if(!sb){card('<div class="msg err">No se pudo cargar la aplicación. Revisa tu conexión y recarga.</div>');show(true);return}
@@ -1305,7 +1305,7 @@ function qaSummaryText(X){var pc=X.L.length?X.conf/X.L.length*100:0,L=['*Informe
   X.keys.forEach(function(k){var o=X.byK[k];if(o.n)L.push('· '+o.l+': '+f0(o.ok/o.n*100)+' % cumple')});
   var top=Object.keys(X.cnt).sort(function(a,b){return X.cnt[b]-X.cnt[a]});if(top.length){L.push('Acciones:');top.slice(0,3).forEach(function(k){L.push('· '+QACT[k])})}return L.join('\n')}
 function pdfTxt(s){return String(s==null?'':s).replace(/[≥]/g,'>=').replace(/[≤]/g,'<=').replace(/[–—]/g,'-').replace(/[≈]/g,'~').replace(/[✓]/g,'OK').replace(/[✕]/g,'X').replace(/[“”]/g,'"').replace(/[^\x00-\xFF]/g,'')}
-function loadJsPDF(){return new Promise(function(res,rej){if(window.jspdf&&window.jspdf.jsPDF)return res(window.jspdf.jsPDF);var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';s.integrity='sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk';s.crossOrigin='anonymous';s.referrerPolicy='no-referrer';s.onload=function(){window.jspdf?res(window.jspdf.jsPDF):rej(new Error('jspdf'))};s.onerror=function(){rej(new Error('jspdf'))};document.head.appendChild(s)})}
+function loadJsPDF(){return new Promise(function(res,rej){if(window.jspdf&&window.jspdf.jsPDF)return res(window.jspdf.jsPDF);var s=document.createElement('script');s.src='vendor/jspdf-4.2.1.umd.min.js';s.onload=function(){window.jspdf?res(window.jspdf.jsPDF):rej(new Error('jspdf'))};s.onerror=function(){rej(new Error('jspdf'))};document.head.appendChild(s)})}
 async function saveFile(name,data){var dl=null;try{dl=window.claude&&await window.claude.use('downloads')}catch(e){}
   if(!dl){toast('La descarga no está disponible en esta vista. Usa Copiar resumen.');return false}
   try{await dl.save({filename:name,data:data});toast('Archivo listo: '+name);return true}catch(e){if(e&&e.code!=='declined')toast('No se pudo descargar ('+(e.code||'error')+').');return false}}
