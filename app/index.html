@@ -461,7 +461,7 @@ window.claude={use:function(n){if(n==='db')return ctxP.then(function(c){return c
 document.documentElement.classList.add('hosted');document.addEventListener('DOMContentLoaded',function(){document.body.classList.add('hosted')});
 
 /* ---------- estado de sesión y mina ---------- */
-var uid=null,email='',rol=null,mina=null,members=[],authMode='login',authMsg=null;
+var uid=null,email='',rol=null,mina=null,members=[],authMode=(/[?&]alta=1/.test(location.search)?'signup':'login'),authMsg=null;
 function show(on){$('#auth').hidden=!on}
 function card(h){$('#authCard').innerHTML=h}
 function errMsg(e){var m=(e&&(e.message||e.error_description))||'Ocurrió un error';

@@ -115,7 +115,7 @@ td input{min-height:30px;padding:3px 6px;max-width:90px}
 <div class="toast" id="toast" hidden></div>
 <script src="../vendor/supabase-2.118.0.js"></script>
 <script src="config.js?v=20261118c"></script>
-<script src="engine.js?v=20261120b"></script>
+<script src="engine.js?v=20261121a"></script>
 <script src="engine-geo.js?v=20261118c"></script>
 <script src="engine-lh.js?v=20261120d"></script>
 <script src="engine-onda.js?v=20261118c"></script>
@@ -713,8 +713,9 @@ function renderAll(){calc();updSummaries();fillInputs();['diseno','carga','real'
   if(S.tab==='diseno')(LHm()?vDisenoLH:vDiseno)();else if(S.tab==='carga')(LHm()?vCargaLH:vCarga)();else if(S.tab==='real')vReal();else if(S.tab==='onda')vOnda();else vBiblio();
   $('#saveSt').textContent=S.dirty?'Cambios sin guardar':(S.id?'Guardado':'');var ban='';
   if(RESCATE)ban+='<div class="banner info">La página se cerró antes de terminar de cargar y la abrimos con valores iniciales. Tu borrador anterior quedó respaldado en este equipo.</div>';
-  if(!S.pro)ban+='<div class="banner warn">Estás viendo Voladura Pro sin el plan Pro activo: puedes calcular, pero no guardar diseños ni lecturas. <a class="btn sm" href="../">Volver a la app</a></div>';
-  $('#ban').innerHTML=ban;$('#bGuardar').disabled=!S.pro||!(S.rol==='admin'||S.rol==='colaborador')}
+  if(S.demo)ban+='<div class="banner info demo"><span><b>Demo gratuita, sin cuenta.</b> Todo se calcula en vivo; nada se guarda. Con tu cuenta el diseño queda para toda la mina, ligado a tus disparos reales y calibrado con tu sismógrafo.</span><a class="btn sm" href="../?alta=1">Crear mi mina gratis</a><a class="btn g sm" href="../">Ingresar</a></div>';
+  else if(!S.pro)ban+='<div class="banner warn">Estás viendo Voladura Pro sin el plan Pro activo: puedes calcular, pero no guardar diseños ni lecturas. <a class="btn sm" href="../">Volver a la app</a></div>';
+  $('#ban').innerHTML=ban;$('#bGuardar').disabled=!S.demo&&!S.pro||!(S.rol==='admin'||S.rol==='colaborador')}
 var rt;function changed(full){S.dirty=true;try{localStorage.setItem('svp-borrador',JSON.stringify(D))}catch(e){}clearTimeout(rt);rt=setTimeout(function(){if(full)renderAll();else{calc();updSummaries();if(S.tab==='diseno')(LHm()?vDisenoLH:vDiseno)();else renderAll()}},90)}
 
 /* ---------- eventos ---------- */
@@ -788,7 +789,7 @@ function simToggle(){var VD=LHm()?vDisenoLH:vDiseno;if(S.sim&&S.sim.run){stopSim
 /* ---------- datos (Supabase) ---------- */
 function strip(o){var c=Object.assign({},o);delete c.id;return c}
 function saveDoc(coll,id,data){return sb.from('docs').upsert({mina_id:S.mina.id,coll:coll,id:id,data:data}).then(function(r){if(r.error){toast(/row-level|permission/i.test(r.error.message)?'Sin permiso: requiere plan Pro activo y rol Colaborador o Administrador.':'No se pudo guardar: '+r.error.message);return false}return true},function(){toast('Sin conexión: no se guardó');return false})}
-function guardar(){if(!D.nombre){toast('Ponle un nombre al diseño');$('#mNombre').focus();return}var id=S.id||uid(),now=new Date();
+function guardar(){if(S.demo){toast('En la demo no se guarda. Crea tu mina gratis: 7 días de prueba y 15 de Pro.');return}if(!D.nombre){toast('Ponle un nombre al diseño');$('#mNombre').focus();return}var id=S.id||uid(),now=new Date();
   var doc={nombre:String(D.nombre).slice(0,100),frente:D.frente||'',design:D,estandar:S.id&&S.disenos[S.id]?!!S.disenos[S.id].estandar:false,actualizado:now.toISOString().slice(0,16).replace('T',' '),por:S.uid,
     resumen:LHm()?{tipo:'larga',n:R.A.holes.length,kg:+R.kgDisp.toFixed(0),ind:f2(R.pfAn)+' kg/t · '+f2(R.costo.porT)+' USD/t',estado:R.estado}:{n:R.holes.length,kg:+R.kg.toFixed(1),fc:+R.fc.toFixed(2),usdM:+R.costo.porM.toFixed(0),ind:f2(R.fc)+' kg/m³ · '+f0(R.costo.porM)+' USD/m',estado:R.estado,av:+R.av.toFixed(2)}};
   saveDoc('disenos',id,doc).then(function(ok){if(!ok)return;S.id=id;doc.id=id;S.disenos[id]=doc;S.dirty=false;renderAll();toast('Diseño guardado para toda la mina')})}
@@ -856,9 +857,19 @@ function csv(){if(LHm())return csvLH();var rows=[['id','tipo','grupo','x_m','y_m
 
 /* ---------- arranque ---------- */
 function gate(h){bootOk();$('#gate').innerHTML=h;$('#gate').hidden=false;$('#app').hidden=true}
+/* ---------- modo demo: sin cuenta, todo en memoria, nada se guarda ---------- */
+function modoDemo(){S.demo=true;
+  /* el borrador y la cola de una cuenta real en este equipo no se tocan */
+  try{var P=Storage.prototype,g=P.getItem,st=P.setItem,rm=P.removeItem,k=function(x){return /^svp-(borrador|cola)/.test(x)?'demo-'+x:x};
+    P.getItem=function(x){return g.call(this,k(x))};P.setItem=function(x,v){return st.call(this,k(x),v)};P.removeItem=function(x){return rm.call(this,k(x))}}catch(e){}
+  var ok={data:[],error:null},ch={};['select','upsert','insert','update','delete','eq','in','gte','lte','order','limit'].forEach(function(m){ch[m]=function(){return ch}});
+  ch.then=function(r,j){return Promise.resolve(ok).then(r,j)};sb={from:function(){return ch},rpc:function(){return ch},auth:{getSession:function(){return Promise.resolve({data:{session:null}})}}};
+  S.uid=null;S.mina={id:'demo',nombre:'Mina demo'};S.rol='admin';S.pro=true;
+  S.frentes={dm1:{id:'dm1',nombre:'Galería 3 Norte',tipo:'galeria',ancho:3.5,alto:3.5,estado:'activo'},dm2:{id:'dm2',nombre:'Rampa 4 Sur',tipo:'rampa',ancho:5,alto:5,estado:'activo'},dm3:{id:'dm3',nombre:'Tajo 820 · Veta Esperanza',tipo:'tajo',ancho:3,alto:15,estado:'activo'}};
+  $('#app').hidden=false;$('#gate').hidden=true;renderSteps();renderAll();setTimeout(bootOk,3000)}
 async function boot(){if(!sb){gate('<h2>No se pudo cargar</h2><p class="mute">Revisa tu conexión y recarga la página.</p>');return}
   var s=(await sb.auth.getSession()).data.session;
-  if(!s){bootOk();gate('<img src="../icons/icon-192.png" width="72" height="72" style="border-radius:16px" alt=""><h2 style="margin-top:14px">Voladura Pro</h2><p class="mute">Ingresa primero en Structiar Mina con tu cuenta.</p><a class="btn" href="../">Ingresar</a>');return}
+  if(!s){modoDemo();return}
   S.uid=s.user.id;var r=await sb.from('miembros').select('rol,mina_id,minas(*)').eq('user_id',S.uid).limit(1);
   var mm=r.data&&r.data[0];if(!mm){gate('<h2>Sin mina</h2><p class="mute">Crea tu mina o únete con un código en la app.</p><a class="btn" href="../">Ir a la app</a>');return}
   S.mina=mm.minas;S.rol=mm.rol;try{var p=await sb.rpc('pro_activo',{m:S.mina.id});S.pro=!!p.data}catch(e){S.pro=false}
