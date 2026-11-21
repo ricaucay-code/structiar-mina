@@ -859,6 +859,8 @@ function csv(){if(LHm())return csvLH();var rows=[['id','tipo','grupo','x_m','y_m
 function gate(h){bootOk();$('#gate').innerHTML=h;$('#gate').hidden=false;$('#app').hidden=true}
 /* ---------- modo demo: sin cuenta, todo en memoria, nada se guarda ---------- */
 function modoDemo(){S.demo=true;
+  /* en la demo no hay nada que guardar: no preguntar por cambios sin guardar */
+  var cf=window.confirm;window.confirm=function(m){return /^Hay cambios sin guardar/.test(String(m))?true:cf.call(window,m)};
   /* el borrador y la cola de una cuenta real en este equipo no se tocan */
   try{var P=Storage.prototype,g=P.getItem,st=P.setItem,rm=P.removeItem,k=function(x){return /^svp-(borrador|cola)/.test(x)?'demo-'+x:x};
     P.getItem=function(x){return g.call(this,k(x))};P.setItem=function(x,v){return st.call(this,k(x),v)};P.removeItem=function(x){return rm.call(this,k(x))}}catch(e){}
