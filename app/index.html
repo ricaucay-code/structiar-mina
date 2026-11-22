@@ -317,7 +317,7 @@ details.calc pre{white-space:pre-wrap;font:12px/1.65 var(--f-mono);background:va
           <label class="f">Tipo<select id="fTipo"></select></label>
           <label class="f">Responsable<select id="fResp"></select></label>
         </div>
-        <div class="board" id="board"></div>
+        <div id="kbAten" style="margin-bottom:12px"></div><div class="board" id="board"></div>
       </section>
 
       <!-- TURNO -->
@@ -672,8 +672,13 @@ function norm(c,o,id){if(!o||typeof o!=='object'||!IDRE.test(String(id)))return 
 function fixDis(h,k){var d=h[k];if(d==null)return;if(typeof d!=='object'){delete h[k];return}
   ['N','carg','L','A','kg','fc','S','barra'].forEach(function(f){if(d[f]!=null)d[f]=num(d[f])});if(d.cls!=null&&!CLS.test(d.cls))d.cls='III'}
 function L6(a){return (Array.isArray(a)?a:[]).slice(0,6).map(function(x){return String(x).slice(0,200)})}
-function put(c,o){if(locked()){lockToast();return}uso('reg');o.ts=Date.now();if(me&&!o.por)o.por=me;if(me)o.ed=me;D[c][o.id]=o;
+function put(c,o){if(locked()){lockToast();return}uso('reg');o.ts=Date.now();if(c==='tareas')cardLife(D.tareas[o.id],o);if(me&&!o.por)o.por=me;if(me)o.ed=me;D[c][o.id]=o;
   if(mode==='db'){var body=clean(o);delete body.id;enqueue(c+'/'+o.id,function(){return db.doc(c+'/'+o.id).set(body)})}else saveLocal();schedule()}
+/* historial de cada tarjeta: creada, empezada, terminada y horas bloqueada (Kanban conectado, módulo 2) */
+function cardLife(prev,o){var t=o.ts;if(!prev){if(!o.creado)o.creado=t}else{['creado','inicioTs','hechoTs','bloqDesde','bloqHoras'].forEach(function(k){if(o[k]===undefined&&prev[k]!==undefined)o[k]=prev[k]})}
+  if(o.col==='curso'&&!o.inicioTs)o.inicioTs=t;
+  if(o.col==='hecho'&&(!prev||prev.col!=='hecho'))o.hechoTs=t;if(o.col!=='hecho'&&o.hechoTs)delete o.hechoTs;
+  var b0=prev&&prev.bloq?1:0,b1=o.bloq?1:0;if(b1&&!o.bloqDesde)o.bloqDesde=t;if(!b1&&o.bloqDesde){o.bloqHoras=(+o.bloqHoras||0)+Math.max(0,(t-o.bloqDesde)/36e5);delete o.bloqDesde}}
 function patch(c,id,ch){if(!D[c][id])return;put(c,Object.assign({},D[c][id],ch))}
 function del(c,id){if(locked()){lockToast();return}delete D[c][id];if(mode==='db')enqueue(c+'/'+id,function(){return db.doc(c+'/'+id).delete()});else saveLocal();schedule()}
 function putCfg(ch){if(locked()){lockToast();return}D.config=Object.assign({},cfg(),ch);if(mode==='db'){var b=clean(D.config);enqueue('config/mina',function(){return db.doc('config/mina').set(b)})}else saveLocal();schedule()}
@@ -926,11 +931,29 @@ function cardHTML(x,actions){
   return '<article class="card ty-'+esc(x.tipo)+(x.bloq?' blk':'')+'"'+(actions&&canWrite?' draggable="true"':'')+' data-id="'+esc(x.id)+'">'+
    '<div class="ct"><span class="tag">'+esc(x.tipo==='Acción'?'Acción correctiva':x.tipo)+'</span><span class="prio '+(x.prio==='P1'?'p1':'')+'">'+esc(x.prio||'P2')+'</span></div>'+
    '<h4>'+esc(x.titulo)+'</h4><div class="meta">'+esc(x.frente?frName(x.frente):'General')+(x.resp?' · '+esc(x.resp):'')+(x.fecha?' · <span class="'+(late?'late':'')+'">'+(late?'atrasada, ':'')+fDate(x.fecha)+'</span>':'')+'</div>'+
-   (x.origen?'<div class="meta">'+esc(x.origen)+'</div>':'')+(x.bloq?'<div class="why">Bloqueada: '+esc(x.bloq)+'</div>':'')+
+   (x.origen?'<div class="meta">'+esc(x.origen)+'</div>':'')+(x.bloq?'<div class="why">Bloqueada: '+esc(x.bloq)+(x.bloqDesde?' · hace '+f0((Date.now()-x.bloqDesde)/36e5)+' h':'')+'</div>':'')+planCardHTML(x)+
    (actions?'<div class="acts w">'+(ci>0?'<button type="button" data-act="mv" data-d="-1" data-id="'+esc(x.id)+'" aria-label="Mover a la columna anterior">◀</button>':'')+(ci<3?'<button type="button" data-act="mv" data-d="1" data-id="'+esc(x.id)+'" aria-label="Mover a la columna siguiente">▶</button>':'')+'<button type="button" data-act="editCard" data-id="'+esc(x.id)+'">Editar</button></div>':'')+'</article>'}
+function planReal(x){if(!x.plan||!x.frente||!x.fecha)return null;var sh=arr('disparos').filter(function(d){return d.frente===x.frente&&d.fecha===x.fecha});return {m:sh.reduce(function(a,d){return a+num(d.avance)},0),n:sh.length}}
+function planCardHTML(x){var r=planReal(x);if(!r)return '';var pm=num(x.plan.m),ok=pm>0&&r.m>=pm*0.95,pas=x.fecha<nowShift().fecha;
+  return '<div class="meta" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span>Programado '+f1(pm)+' m · real '+f1(r.m)+' m ('+r.n+' disparos)</span>'+(ok?'<span class="pill ok">Cumplido'+(x.col!=='hecho'?': pásala a Hecho':'')+'</span>':pas?'<span class="pill bad">No cumplido</span>':'')+'</div>'}
+var WIP=2;
+function kbAtencion(list){var hoy=nowShift().fecha,act=list.filter(function(x){return x.col!=='hecho'}),bq=act.filter(function(x){return x.bloq}),at=act.filter(function(x){return x.fecha&&x.fecha<hoy}),
+    cur=act.filter(function(x){return x.col==='curso'&&x.frente}).reduce(function(o,x){o[x.frente]=(o[x.frente]||0)+1;return o},{}),sobre=Object.keys(cur).filter(function(k){return cur[k]>WIP}),
+    sin=list.filter(function(x){if(!x.plan||x.fecha!==hoy)return false;var r=planReal(x);return r&&r.n===0}),
+    sem=Date.now()-7*864e5,hechas=list.filter(function(x){return x.hechoTs&&x.hechoTs>=sem}),lead=hechas.filter(function(x){return x.creado}).map(function(x){return (x.hechoTs-x.creado)/864e5}),
+    hb=list.reduce(function(a,x){return a+(+x.bloqHoras||0)+(x.bloqDesde?(Date.now()-x.bloqDesde)/36e5:0)},0),
+    pl=list.filter(function(x){return x.plan&&x.fecha<hoy&&x.fecha>=addDays(hoy,-7)}),plOk=pl.filter(function(x){var r=planReal(x);return r&&r.m>=num(x.plan.m)*0.95});
+  var it=[];if(bq.length)it.push(['bad',bq.length+' bloqueada'+(bq.length>1?'s':'')]);if(at.length)it.push(['warn',at.length+' atrasada'+(at.length>1?'s':'')]);
+  sobre.forEach(function(k){it.push(['warn',frName(k)+': '+cur[k]+' tareas en curso (límite '+WIP+')'])});if(sin.length)it.push(['warn',sin.length+' frente'+(sin.length>1?'s':'')+' programado'+(sin.length>1?'s':'')+' hoy sin disparo aún']);
+  var h='<div class="kpis"><div class="kpi"><div class="l">Tareas cerradas (7 días)</div><div class="v">'+hechas.length+'</div><div class="s">'+(lead.length?'días por tarea: '+f1(lead.reduce(function(a,b){return a+b},0)/lead.length):'sin historial aún')+'</div></div>'+
+    '<div class="kpi '+(hb>24?'warn':'')+'"><div class="l">Horas bloqueadas</div><div class="v">'+f0(hb)+'<small>h</small></div><div class="s">'+bq.length+' bloqueada'+(bq.length===1?'':'s')+' ahora</div></div>'+
+    '<div class="kpi '+(pl.length?(plOk.length/pl.length>=0.9?'ok':plOk.length/pl.length>=0.7?'warn':'bad'):'')+'"><div class="l">Programado cumplido (7 días)</div><div class="v">'+(pl.length?f0(plOk.length/pl.length*100)+'<small>%</small>':'—')+'</div><div class="s">'+plOk.length+' de '+pl.length+' días programados</div></div></div>';
+  h+=it.length?'<div class="panel" style="margin-top:10px;padding:10px 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><b style="font-size:13px">Necesita atención</b>'+it.map(function(x){return '<span class="pill '+x[0]+'" style="white-space:normal;max-width:100%">'+esc(x[1])+'</span>'}).join('')+'</div>':'';
+  return h}
 function renderPlan(full){
   $('#fFrente').innerHTML=frOpts(ui.fFrente,'Todos los frentes');$('#fTipo').innerHTML=tipoOpts(ui.fTipo,'Todos los tipos');$('#fResp').innerHTML=opts(respList(),ui.fResp,'Todos');
   var list=arr('tareas').filter(function(x){return (!ui.fFrente||x.frente===ui.fFrente)&&(!ui.fTipo||x.tipo===ui.fTipo)&&(!ui.fResp||x.resp===ui.fResp)}),po={P1:0,P2:1,P3:2};
+  $('#kbAten').innerHTML=kbAtencion(list);
   $('#board').innerHTML=COLS.map(function(c){var cs=list.filter(function(x){return x.col===c[0]}).sort(function(a,b){return (b.bloq?1:0)-(a.bloq?1:0)||(po[a.prio]||1)-(po[b.prio]||1)||String(a.fecha).localeCompare(String(b.fecha))});
     if(c[0]==='hecho')cs=cs.sort(function(a,b){return (b.ts||0)-(a.ts||0)}).slice(0,15);
     return '<div class="col" data-col="'+c[0]+'" style="--c:'+c[2]+'"><header><h3>'+c[1]+'</h3><span class="cnt">'+cs.length+'</span></header>'+(cs.length?cs.map(function(x){return cardHTML(x,true)}).join(''):'<div class="empty" style="padding:12px;font-size:13px">Sin tareas</div>')+'</div>'}).join('');
@@ -962,6 +985,14 @@ function pmFr(fr,mes){var c=cfg(),td=Math.max(1,Math.round(24/c.turnoHoras)),met
     if(meta>real){var k2=JSON.stringify([p,'L',meta-real]),S2=pmCache[k2]||(pmCache[k2]=SVE.CIC.simular(Object.assign({},p,{largo:meta-real,turnosDia:td,sims:400})));r.diasMeta=S2?S2.dias.p50:null}}
   else r.fc={p10:real,p50:real,p90:real};
   r.estado=!meta?'n':r.fc.p10>=meta?'ok':r.fc.p50>=meta?'warn':'bad';return r}
+/* crea o actualiza una tarjeta por día (próximos 7 días, dentro del mes) con los disparos y metros que pide la meta */
+function progSemana(r){if(!r||!r.meta||!canWrite)return;var hoy=nowShift().fecha,falta=Math.max(0,r.meta-r.real),ritmo=falta>0?r.ritmoNec:0,mDis=r.mAv||1.6,n=0,acc=0,prev=0;
+  if(!falta){toast('La meta del mes ya está cumplida');return}
+  for(var k=0;k<7;k++){var f=addDays(hoy,k);if(f.slice(0,7)!==hoy.slice(0,7))break;acc+=ritmo/mDis;var nd=Math.round(acc)-prev;prev+=nd;if(nd<=0)continue;
+    var id='pl-'+r.fr.id+'-'+f,ex=D.tareas[id];if(ex&&ex.col==='hecho')continue;
+    var o=Object.assign({},ex||{id:id,col:'prog',resp:'',prio:'P2',bloq:''},{titulo:'Avance '+r.fr.nombre+' · '+nd+' disparo'+(nd>1?'s':''),frente:r.fr.id,tipo:'Avance',fecha:f,plan:{m:Math.round(nd*mDis*10)/10,n:nd},origen:'Plan del mes: meta '+f0(r.meta)+' m · ciclo perforar, cargar, ventilar, limpiar, sostener'});
+    put('tareas',o);n++}
+  toast(n?n+' días programados para '+r.fr.nombre:'Nada que programar esta semana')}
 function renderPlanMes(force){var box=$('#planMes');if(!box)return;var mes=pmMes(),frs=arr('frentes').filter(function(f){return f.activo!==false}).sort(function(a,b){return a.nombre.localeCompare(b.nombre)});
   if(!force&&box.contains(document.activeElement)&&document.activeElement.tagName==='INPUT')return;
   var R=frs.map(function(f){return pmFr(f,mes)}),con=R.filter(function(r){return r.meta>0}),tM=con.reduce(function(a,r){return a+r.meta},0),tR=con.reduce(function(a,r){return a+r.real},0),tP=con.reduce(function(a,r){return a+r.fc.p50},0);
@@ -979,7 +1010,7 @@ function renderPlanMes(force){var box=$('#planMes');if(!box)return;var mes=pmMes
      '<td data-l="Avance contra el plan">'+(r.meta?'<div style="position:relative;height:10px;border-radius:5px;background:var(--line)"><div style="position:absolute;inset:0 auto 0 0;width:'+pc+'%;border-radius:5px;background:var(--'+(r.real>=r.esperadoHoy*0.98?'ok':'warn')+')"></div><div title="Lo esperado a hoy" style="position:absolute;top:-3px;bottom:-3px;left:calc('+pe+'% - 1px);width:2px;background:var(--ink)"></div></div><div class="mute" style="font-size:12px;margin-top:3px">a hoy se esperaban '+f1(r.esperadoHoy)+' m</div>':'<span class="mute">—</span>')+'</td>'+
      '<td class="n" data-l="Ritmo real / necesario">'+f1(r.ritmoReal)+' / '+(r.meta?f1(r.ritmoNec):'—')+'<div class="mute" style="font-size:12px">m/día</div></td>'+
      '<td class="n" data-l="Cierre esperado"><b>'+f0(r.fc.p50)+' m</b><div class="mute" style="font-size:12px">'+f0(r.fc.p10)+'–'+f0(r.fc.p90)+' m</div></td>'+
-     '<td data-l="Estado"><span class="pill '+r.estado+'">'+lbl[r.estado]+'</span>'+(r.estado==='bad'&&r.diasMeta?'<div class="mute" style="font-size:12px">necesita '+f0(r.diasMeta)+' días más</div>':'')+'</td></tr>'}).join('')+
+     '<td data-l="Estado"><span class="pill '+r.estado+'">'+lbl[r.estado]+'</span>'+(r.meta&&canWrite&&mes===nowShift().fecha.slice(0,7)?'<div><button type="button" class="btn g sm" style="margin-top:6px" data-act="progSem" data-id="'+esc(r.fr.id)+'">Programar 7 días</button></div>':'')+(r.estado==='bad'&&r.diasMeta?'<div class="mute" style="font-size:12px">necesita '+f0(r.diasMeta)+' días más</div>':'')+'</td></tr>'}).join('')+
    '</tbody></table></div><p class="note" style="margin-top:8px">Cierre esperado: el valor central se cumple 1 de cada 2 meses; el rango va del pesimista (se supera 9 de cada 10 veces) al optimista. Se calcula simulando el ciclo de cada frente en los turnos que quedan, con su avance real por disparo. Tiempos del ciclo: Mina San Pedro, Chile (Vargas et al., 2014). Cuando el frente ya tiene 8 disparos en el mes, el ciclo se ajusta a su ritmo real de disparos por día.</p>';
   box.innerHTML=h}
 document.addEventListener('change',function(e){var el=e.target;if(!el||!el.dataset)return;
@@ -1513,6 +1544,7 @@ document.addEventListener('click',function(e){
   case 'cancelCard':ui.editCard=null;ui.confirm=null;renderCardForm();return;
   case 'askDelCard':ui.confirm='card';renderCardForm();return;
   case 'delCard':del('tareas',ui.editCard);ui.editCard=null;ui.confirm=null;renderCardForm();toast('Tarea borrada');return;
+  case 'progSem':var rp=pmFr(D.frentes[id],nowShift().fecha.slice(0,7));progSemana(rp);return;
   case 'mv':var x=D.tareas[id];if(!x)return;var ci=COLS.map(function(c){return c[0]}).indexOf(x.col)+(+b.dataset.d);if(ci>=0&&ci<4)moveCard(id,COLS[ci][0]);return;
   case 'copyPlan':var c=curT(),p=prevShift(c.f,c.i),pt=tGet(p.f,p.i),t=Object.assign({},tGet(c.f,c.i));t.plan=Object.assign({},pt.plan);put('turnos',t);toast('Meta copiada del turno anterior');return;
   case 'mkAction':var ct=D.controles[id];if(ct){var tid=mkAction(ct.fecha,ct.i,ct);patch('controles',id,{tareaId:tid});toast('Acción creada en el tablero')}return;
