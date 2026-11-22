@@ -115,13 +115,16 @@ function disenarLH(d){d=JSON.parse(JSON.stringify(d));var b=d.bloque,v=d.veta,p=
   // dilución
   var elosH=M.elosHW!=null?M.elosHW:0.5,elosF=M.elosFW!=null?M.elosFW:0.3;
   var rRot=Math.sqrt(A.q*3.7*ex.rws/100)*0.12,elosV=Math.max(0,rRot-0.2);// sobre-rotura por voladura en contactos
-  var hwT=elosH+elosV,fwT=elosF+elosV,dil=(hwT+fwT)/(v.w+hwT+fwT)*100;
+  /* El ELOS de los gráficos (Clark, Capes) sale de escaneos CMS de caserones reales y ya incluye el daño de una
+     voladura normal: no se suma. Manda el mayor; la voladura solo agrega si su daño supera al de la caja.
+     Validado: caserón 2,5 m (Gómez 2015) → 32 % de dilución, tesis ≈ 30 %. */
+  var hwT=Math.max(elosH,elosV),fwT=Math.max(elosF,elosV),dil=(hwT+fwT)/(v.w+hwT+fwT)*100,mandaVol=elosV>elosH;
   var tonEst=tonAn*(hwT+fwT)/v.w*(b.densEst/b.densMin),leyDil=b.ley*v.w/(v.w+hwT+fwT)*(b.densMin/((v.w*b.densMin+(hwT+fwT)*b.densEst)/(v.w+hwT+fwT)));
   // esponjamiento: el vacío disponible debe recibir el esponjamiento del disparo
   var esp=1.45,volDisp=Z.area*p.B*nDisp,vacio=(conC?vacioCuna:0)+Z.area*Math.max(0,+d.disparo.slot||0),necesita=volDisp*(esp-1);
   var R={cR:CR,c:cL,cbar:cbar,cUser:cU!=null,BmaxL:BmaxL,errP:errP,fA:fA,tipo:'larga',d:d,prod:ex,A:A,Z:Z,M:M,kr:kr,Bsug:Bsug,tonAn:tonAn,nAn:nAn,nDisp:nDisp,kgDisp:kgDisp,tonDisp:tonDisp,pfAn:pfAn,pfDisp:tonDisp?kgDisp/tonDisp:0,
     cuna:{phi:phi,B1:B1,dev:dev,ratio:ratioFondo,kg:kgC,L:Lc,vacio:vacioCuna,n:C.nCarg},kgRet:kgRet,ppv:ppv,qAdm:qAdm,distMin:Math.sqrt(kgRet)*Math.pow(d.vibr.lim/d.vibr.K,-1/d.vibr.beta),
-    elos:{hw:hwT,fw:fwT,voladura:elosV},dil:dil,tonEst:tonEst*nDisp,leyDil:leyDil,minBloque:Z.area*b.largo*b.densMin,
+    elos:{hw:hwT,fw:fwT,voladura:elosV,cajaHW:elosH,cajaFW:elosF,mandaVoladura:mandaVol},dil:dil,tonEst:tonEst*nDisp,leyDil:leyDil,minBloque:Z.area*b.largo*b.densMin,
     esp:{factor:esp,vacio:vacio,necesita:necesita,ok:vacio>=necesita}};
   R.pfObj=(0.25+0.9/Math.max(0.8,v.w))*kr;
   if(!d._sub)R.energia=energiaAnillo(R);

@@ -117,7 +117,7 @@ td input{min-height:30px;padding:3px 6px;max-width:90px}
 <script src="config.js?v=20261118c"></script>
 <script src="engine.js?v=20261122a"></script>
 <script src="engine-geo.js?v=20261118c"></script>
-<script src="engine-lh.js?v=20261122a"></script>
+<script src="engine-lh.js?v=20261122b"></script>
 <script src="engine-onda.js?v=20261118c"></script>
 <script src="engine-calib.js?v=20261119a"></script>
 <script src="engine-opt.js?v=20261120a"></script><script src="engine-ciclo.js?v=20261122a"></script>
@@ -649,7 +649,7 @@ function vDisenoLH(){var est=R.estado==='conforme'?'ok':R.estado==='revisar'?'er
   h+='<div class="panel"><div class="ph"><h3>Alertas QA/QC</h3></div><div class="alerts">'+R.alertas.slice().sort(function(a,b){var o={error:0,aviso:1,ok:2};return o[a.nivel]-o[b.nivel]}).map(function(a){return '<div class="al"><span class="pill '+a.nivel+'">'+(a.nivel==='ok'?'OK':a.nivel==='aviso'?'AVISO':'REVISAR')+'</span><span>'+esc(a.txt)+'</span>'+(a.nivel!=='ok'&&a.acc?'<small>→ '+esc(a.acc)+'</small>':'')+'</div>'}).join('')+'</div></div>';
   h+=estrPanel();
   h+='<div class="g2"><div class="panel chart"><div class="ph"><h3>Estabilidad de Mathews</h3><span class="r pill '+(R.M.estado==='estable'?'ok':R.M.estado==='transición'?'aviso':R.M.estado==='sin datos'?'n':'error')+'">'+esc(R.M.estado)+'</span></div>'+mathewsSVG()+'<p class="note">N\' = Q\'·A·B·C; radio hidráulico de la caja techo = área / perímetro. Límites y ELOS aproximados de los gráficos publicados de Mathews y Clark & Pakalnis: calíbralos con el perfil escaneado del tajo.</p></div>'+
-   '<div class="panel"><div class="ph"><h3>Dilución y ley</h3></div><div class="grid6"><div><div class="l">ELOS por estabilidad</div><div class="v">'+(R.M.elosHW!=null?f2(R.M.elosHW)+' m':'—')+'</div></div><div><div class="l">Sobrerotura por voladura</div><div class="v">'+f2(R.elos.voladura)+' m</div></div><div><div class="l">Estéril del disparo</div><div class="v">'+f0(R.tonEst)+' t</div></div><div><div class="l">Ley diluida</div><div class="v">'+f2(R.leyDil)+' g/t</div></div></div>'+
+   '<div class="panel"><div class="ph"><h3>Dilución y ley</h3></div><div class="grid6"><div><div class="l">ELOS por estabilidad</div><div class="v">'+(R.M.elosHW!=null?f2(R.M.elosHW)+' m':'—')+'</div></div><div><div class="l">Sobrerotura por voladura</div><div class="v">'+f2(R.elos.voladura)+' m</div><div class="s">'+(R.elos.mandaVoladura?'manda la voladura: baja la carga en los contactos':'incluida en el ELOS: no se suma')+'</div></div><div><div class="l">Estéril del disparo</div><div class="v">'+f0(R.tonEst)+' t</div></div><div><div class="l">Ley diluida</div><div class="v">'+f2(R.leyDil)+' g/t</div></div></div>'+
    '<p class="note">La dilución suma la inestabilidad de la caja (ELOS) y el daño de la voladura en los contactos. Para bajarla: taco más largo o carga desacoplada en los taladros de contacto, tajo más corto o pilares.</p></div></div>';
   var hs=E.LH.hojaSimba(R).filter(function(x){return x.anillo===1});
   h+='<div class="panel"><div class="ph"><h3>Anillo tipo · hoja de perforación</h3><small class="mute">ángulo desde la horizontal, positivo hacia el alto</small></div><div class="tbl"><table><thead><tr><th>Taladro</th><th class="n">Ángulo</th><th class="n">Longitud</th><th class="n">Barras</th><th class="n">Collar sin carga</th><th class="n">Carga</th><th class="n">Taco fondo</th><th class="n">kg</th><th class="n">Cebos</th><th>Conecta</th><th class="n">Salida</th></tr></thead><tbody>'+
