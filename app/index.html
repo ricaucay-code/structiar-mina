@@ -1,4 +1,4 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://qxcqzdytpcwgzsaaabsx.supabase.co wss://qxcqzdytpcwgzsaaabsx.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'"><script>if(window.top!==window.self){document.documentElement.style.display='none';try{window.top.location=window.self.location}catch(e){}}</script><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0E2233"><meta name="referrer" content="strict-origin-when-cross-origin"><title>Structiar Mina</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/favicon.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Structiar"><style>*{box-sizing:border-box}body{margin:0}</style></head><body>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self' https://qxcqzdytpcwgzsaaabsx.supabase.co wss://qxcqzdytpcwgzsaaabsx.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'"><script>if(window.top!==window.self){document.documentElement.style.display='none';try{window.top.location=window.self.location}catch(e){}}</script><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0E2233"><meta name="referrer" content="strict-origin-when-cross-origin"><title>Structiar Mina</title><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icons/favicon.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Structiar"><style>*{box-sizing:border-box}body{margin:0}@media (max-width:700px){#planMes thead{display:none}#planMes table,#planMes tbody,#planMes tr,#planMes td{display:block;width:100%;min-width:0}#planMes tr{border-bottom:1px solid var(--line);padding:10px 0}#planMes td{text-align:left!important;padding:4px 12px;border:0}#planMes td[data-l]::before{content:attr(data-l);display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin-bottom:2px}}</style></head><body>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -308,8 +308,9 @@ details.calc pre{white-space:pre-wrap;font:12px/1.65 var(--f-mono);background:va
 
       <!-- PLAN -->
       <section class="view" id="v-plan" hidden>
-        <div class="vhead"><div><div class="eyebrow">Planificación</div><h2>Plan de la semana</h2><p>Cada tarjeta es un trabajo en un frente. Muévela a medida que avanza: arrastra en la computadora o usa las flechas en el celular.</p></div>
+        <div class="vhead"><div><div class="eyebrow">Planificación</div><h2>Plan del mes y de la semana</h2><p>Arriba, la meta de metros de cada frente y el cierre de mes que se puede esperar. Abajo, las tareas de la semana: arrástralas en la computadora o usa las flechas en el celular.</p></div>
           <div class="tools"><button class="btn w" data-act="newCard">Nueva tarea</button></div></div>
+        <div class="panel" id="planMes" style="margin-bottom:16px"></div>
         <div class="panel" id="cardForm" hidden style="margin-bottom:16px"></div>
         <div class="fields" style="margin-bottom:14px">
           <label class="f">Frente<select id="fFrente"></select></label>
@@ -438,7 +439,7 @@ details.calc pre{white-space:pre-wrap;font:12px/1.65 var(--f-mono);background:va
   <div class="brand"><img src="icons/icon-192.png" alt="" width="64" height="64" style="display:block;margin:0 auto 10px;border-radius:14px">STRUCT<b>IAR</b> MINA<small>Gestión de mina · prueba gratis de 7 días</small></div>
   <div class="card" id="authCard"></div>
 </div></div>
-<script src="vendor/supabase-2.118.0.js"></script>
+<script src="pro/engine-ciclo.js?v=20261123a"></script><script src="vendor/supabase-2.118.0.js"></script>
 <script>
 (function(){'use strict';
 var S=window.STRUCTIAR_CFG||{};
@@ -933,8 +934,58 @@ function renderPlan(full){
   $('#board').innerHTML=COLS.map(function(c){var cs=list.filter(function(x){return x.col===c[0]}).sort(function(a,b){return (b.bloq?1:0)-(a.bloq?1:0)||(po[a.prio]||1)-(po[b.prio]||1)||String(a.fecha).localeCompare(String(b.fecha))});
     if(c[0]==='hecho')cs=cs.sort(function(a,b){return (b.ts||0)-(a.ts||0)}).slice(0,15);
     return '<div class="col" data-col="'+c[0]+'" style="--c:'+c[2]+'"><header><h3>'+c[1]+'</h3><span class="cnt">'+cs.length+'</span></header>'+(cs.length?cs.map(function(x){return cardHTML(x,true)}).join(''):'<div class="empty" style="padding:12px;font-size:13px">Sin tareas</div>')+'</div>'}).join('');
-  if(full)renderCardForm();
+  if(full)renderCardForm();renderPlanMes();
 }
+/* ================= plan del mes (módulo Planificación) =================
+   Meta de metros por frente (se guarda en el frente: metas['AAAA-MM']), avance real desde los disparos y
+   cierre de mes esperado con Monte Carlo del ciclo con turnos (Vargas et al., TUST 2014; validado 1 %). */
+var PM_OPS=[['Perforación',195,38],['Carguío y voladura',56,12],['Ventilación',90,0],['Desatado',26,7],['Limpieza',70,20],['Sostenimiento',0,0]],pmCache={};
+function pmMes(){return ui.pmMes||nowShift().fecha.slice(0,7)}
+function pmDias(mes){var y=+mes.slice(0,4),m=+mes.slice(5,7);return new Date(y,m,0).getDate()}
+function pmFr(fr,mes){var c=cfg(),td=Math.max(1,Math.round(24/c.turnoHoras)),meta=num((fr.metas||{})[mes]),sh=arr('disparos').filter(function(d){return d.frente===fr.id}),
+    del=sh.filter(function(d){return String(d.fecha).slice(0,7)===mes}),real=del.reduce(function(a,d){return a+num(d.avance)},0),
+    rec=sh.filter(function(d){return num(d.avance)>0}).sort(function(a,b){return String(b.fecha).localeCompare(String(a.fecha))}).slice(0,30),
+    avs=rec.map(function(d){return num(d.avance)}),mAv=avs.length?avs.reduce(function(a,b){return a+b},0)/avs.length:0,sdAv=avs.length>2?Math.sqrt(avs.reduce(function(a,b){return a+(b-mAv)*(b-mAv)},0)/(avs.length-1)):0;
+  var hoy=nowShift(),dm=pmDias(mes),mesHoy=hoy.fecha.slice(0,7),dHoy=+hoy.fecha.slice(8,10),
+    turnosRest=mes<mesHoy?0:mes>mesHoy?dm*td:Math.max(0,(dm-dHoy)*td+(td-1-hoy.idx)),diasPas=mes<mesHoy?dm:mes>mesHoy?0:dHoy-1+Math.min(1,(hoy.idx+hoy.horas/c.turnoHoras)/td);
+  var cic=fr.ciclo&&fr.ciclo.ops?fr.ciclo:null,ops=(cic?cic.ops:PM_OPS).filter(function(o){return +o[1]>0}).map(function(o){return {media:+o[1],desv:+o[2]||0,min:Math.max(1,+o[1]*0.35)}}),
+    L=mAv||1.8*0.9,turno=cic&&cic.turno?+cic.turno:Math.round(c.turnoHoras*60*0.75);
+  /* calibración con el ritmo real: si el frente ya tiene historia en el mes, se escalan los tiempos del ciclo
+     para que el modelo reproduzca los disparos por turno observados */
+  var cal=null;if(window.SVE&&SVE.CIC&&ops.length&&del.length>=8&&diasPas>=5){var obs=del.length/(diasPas*td),kc=JSON.stringify(['cps',ops,turno]),
+      cps=pmCache[kc]||(pmCache[kc]=SVE.CIC.metrosEnTurnos({ops:ops,turno:turno,tol:60,reinicio:30,L:1,eff:100,sims:300,seed:3},40).media/40);
+    if(cps>0&&obs>0){var k=Math.max(0.4,Math.min(3,cps/obs));ops=ops.map(function(o){return {media:o.media*k,desv:o.desv*k,min:o.min*k}});cal={obs:obs*td,k:k}}}
+  var r={fr:fr,meta:meta,real:real,n:del.length,mAv:mAv,nAv:avs.length,turnosRest:turnosRest,td:td,diasPas:diasPas,dm:dm,ops:ops,L:L,turno:turno,cic:!!cic,cal:cal};
+  r.esperadoHoy=meta*diasPas/dm;r.ritmoReal=diasPas>0?real/diasPas:0;r.ritmoNec=meta>real&&turnosRest>0?(meta-real)/(turnosRest/td):0;
+  if(window.SVE&&SVE.CIC&&turnosRest>0&&ops.length){var p={ops:ops,turno:turno,tol:60,reinicio:30,L:L,eff:100,effDesv:mAv>0?sdAv/mAv*100:5,sims:700,seed:7},key=JSON.stringify([p,turnosRest]);
+    var M=pmCache[key]||(pmCache[key]=SVE.CIC.metrosEnTurnos(p,turnosRest));r.fc={p10:real+M.p10,p50:real+M.p50,p90:real+M.p90};
+    if(meta>real){var k2=JSON.stringify([p,'L',meta-real]),S2=pmCache[k2]||(pmCache[k2]=SVE.CIC.simular(Object.assign({},p,{largo:meta-real,turnosDia:td,sims:400})));r.diasMeta=S2?S2.dias.p50:null}}
+  else r.fc={p10:real,p50:real,p90:real};
+  r.estado=!meta?'n':r.fc.p10>=meta?'ok':r.fc.p50>=meta?'warn':'bad';return r}
+function renderPlanMes(force){var box=$('#planMes');if(!box)return;var mes=pmMes(),frs=arr('frentes').filter(function(f){return f.activo!==false}).sort(function(a,b){return a.nombre.localeCompare(b.nombre)});
+  if(!force&&box.contains(document.activeElement)&&document.activeElement.tagName==='INPUT')return;
+  var R=frs.map(function(f){return pmFr(f,mes)}),con=R.filter(function(r){return r.meta>0}),tM=con.reduce(function(a,r){return a+r.meta},0),tR=con.reduce(function(a,r){return a+r.real},0),tP=con.reduce(function(a,r){return a+r.fc.p50},0);
+  var lbl={ok:'Llega',warn:'En riesgo',bad:'No llega',n:'Sin meta'};
+  var h='<div class="ph"><h3>Plan del mes</h3><label class="r" style="display:flex;gap:6px;align-items:center;font-size:13px">Mes<input type="month" id="pmMes" value="'+mes+'" style="width:auto"></label></div>';
+  if(!frs.length){box.innerHTML=h+'<p class="empty">Crea tus frentes en la pestaña Mina para planificar el mes.</p>';return}
+  h+='<div class="kpis" style="margin-bottom:12px"><div class="kpi"><div class="l">Meta del mes</div><div class="v">'+f0(tM)+'<small>m</small></div><div class="s">'+con.length+' de '+frs.length+' frentes con meta</div></div>'+
+    '<div class="kpi '+(tM?(tR>=tM*0.98?'ok':''):'')+'"><div class="l">Real acumulado</div><div class="v">'+f1(tR)+'<small>m</small></div><div class="s">'+(tM?f0(tR/tM*100)+' % de la meta':'—')+'</div></div>'+
+    '<div class="kpi '+(tM?(tP>=tM?'ok':tP>=tM*0.9?'warn':'bad'):'')+'"><div class="l">Cierre esperado</div><div class="v">'+f0(tP)+'<small>m</small></div><div class="s">'+(tM?(tP>=tM?'cumple la meta':'faltan '+f0(tM-tP)+' m'):'pon una meta por frente')+'</div></div></div>';
+  h+='<div class="tbl"><table><thead><tr><th>Frente</th><th class="n">Meta (m)</th><th class="n">Real</th><th style="min-width:140px">Avance contra el plan</th><th class="n">Ritmo real / necesario</th><th class="n">Cierre esperado</th><th>Estado</th></tr></thead><tbody>'+
+   R.map(function(r){var pc=r.meta?Math.min(100,r.real/r.meta*100):0,pe=r.meta?Math.min(100,r.esperadoHoy/r.meta*100):0;
+    return '<tr><td><b>'+esc(r.fr.nombre)+'</b><div class="mute" style="font-size:12px">'+(r.nAv?f2(r.mAv)+' m por disparo ('+r.nAv+' disparos)':'sin disparos: se asume 1,6 m por disparo')+(r.cal?' · ritmo real '+f1(r.cal.obs)+' disparos/día':'')+'</div></td>'+
+     '<td class="n" data-l="Meta del mes (m)"><input type="number" min="0" step="1" style="width:76px" data-pmeta="'+esc(r.fr.id)+'" value="'+(r.meta||'')+'"'+(canWrite?'':' disabled')+'></td>'+
+     '<td class="n" data-l="Real">'+f1(r.real)+' m<div class="mute" style="font-size:12px">'+r.n+' disparos</div></td>'+
+     '<td data-l="Avance contra el plan">'+(r.meta?'<div style="position:relative;height:10px;border-radius:5px;background:var(--line)"><div style="position:absolute;inset:0 auto 0 0;width:'+pc+'%;border-radius:5px;background:var(--'+(r.real>=r.esperadoHoy*0.98?'ok':'warn')+')"></div><div title="Lo esperado a hoy" style="position:absolute;top:-3px;bottom:-3px;left:calc('+pe+'% - 1px);width:2px;background:var(--ink)"></div></div><div class="mute" style="font-size:12px;margin-top:3px">a hoy se esperaban '+f1(r.esperadoHoy)+' m</div>':'<span class="mute">—</span>')+'</td>'+
+     '<td class="n" data-l="Ritmo real / necesario">'+f1(r.ritmoReal)+' / '+(r.meta?f1(r.ritmoNec):'—')+'<div class="mute" style="font-size:12px">m/día</div></td>'+
+     '<td class="n" data-l="Cierre esperado"><b>'+f0(r.fc.p50)+' m</b><div class="mute" style="font-size:12px">'+f0(r.fc.p10)+'–'+f0(r.fc.p90)+' m</div></td>'+
+     '<td data-l="Estado"><span class="pill '+r.estado+'">'+lbl[r.estado]+'</span>'+(r.estado==='bad'&&r.diasMeta?'<div class="mute" style="font-size:12px">necesita '+f0(r.diasMeta)+' días más</div>':'')+'</td></tr>'}).join('')+
+   '</tbody></table></div><p class="note" style="margin-top:8px">Cierre esperado: el valor central se cumple 1 de cada 2 meses; el rango va del pesimista (se supera 9 de cada 10 veces) al optimista. Se calcula simulando el ciclo de cada frente en los turnos que quedan, con su avance real por disparo. Tiempos del ciclo: Mina San Pedro, Chile (Vargas et al., 2014). Cuando el frente ya tiene 8 disparos en el mes, el ciclo se ajusta a su ritmo real de disparos por día.</p>';
+  box.innerHTML=h}
+document.addEventListener('change',function(e){var el=e.target;if(!el||!el.dataset)return;
+  if(el.id==='pmMes'){ui.pmMes=/^\d{4}-\d{2}$/.test(el.value)?el.value:null;renderPlanMes(true);return}
+  if(el.dataset.pmeta!=null){if(!canWrite)return;var fr=D.frentes[el.dataset.pmeta];if(!fr)return;var v=Math.max(0,Math.min(100000,num(el.value))),m=Object.assign({},fr.metas||{});if(v>0)m[pmMes()]=Math.round(v*10)/10;else delete m[pmMes()];
+    patch('frentes',fr.id,{metas:m});toast('Meta guardada');setTimeout(function(){renderPlanMes(true)},50)}});
 function renderCardForm(){
   var box=$('#cardForm');if(ui.editCard===null){box.hidden=true;box.innerHTML='';return}
   var x=ui.editCard==='new'?{titulo:'',frente:'',tipo:'Avance',col:'hacer',resp:'',fecha:nowShift().fecha,prio:'P2',bloq:''}:D.tareas[ui.editCard];

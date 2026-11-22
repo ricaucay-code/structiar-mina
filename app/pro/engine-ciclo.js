@@ -22,6 +22,16 @@ function simular(p){var r=rng(p.seed||7),N=Math.max(100,Math.min(20000,p.sims||3
     ciclosTurno:ciclosT.reduce(function(a,b){return a+b},0)/N,mTurno:p.largo/m,mDia:p.largo/m*td,hist:res}}
 /* plan convencional (determinístico): ciclos por turno = turno efectivo / suma de medias */
 function planFijo(p){var c=(p.ops||[]).reduce(function(a,o){return a+(+o.media||0)},0);if(!c)return null;var cT=(+p.turno||540)/c,mT=cT*p.L*(+p.eff||90)/100;return {ciclosTurno:cT,mTurno:mT,turnos:p.largo/mT,dias:p.largo/mT/(+p.turnosDia||2)}}
-var API={simular:simular,planFijo:planFijo};
+/* metros alcanzables en un número fijo de turnos (para cerrar el mes): misma lógica de turnos y reinicios */
+function metrosEnTurnos(p,nT){var r=rng(p.seed||11),N=Math.max(100,Math.min(5000,p.sims||1500)),dt=+p.turno||540,tol=+p.tol||0,beg=+p.reinicio||0,ops=p.ops||[],out=[];
+  if(!ops.length||!(p.L>0)||!(nT>0))return {p10:0,p50:0,p90:0,media:0};
+  for(var i=0;i<N;i++){var m=0,k=0,rest=0;for(var t0=0;t0<nT;t0++){var t=rest;rest=0;
+      while(t<=dt-tol){t+=muestra(r,ops[k]);k++;if(k>=ops.length){k=0;var e=Math.max(0.3,Math.min(1,((+p.eff||90)+gauss(r)*(+p.effDesv||0))/100));m+=p.L*e}}
+      if(t>dt)rest=Math.min(dt,t-dt+beg)}
+    out.push(m)}
+  out.sort(function(a,b){return a-b});
+  /* p10 = valor que se supera 9 de cada 10 veces (pesimista); p90 = optimista */
+  return {p10:pct(out,0.1),p50:pct(out,0.5),p90:pct(out,0.9),media:out.reduce(function(a,b){return a+b},0)/N}}
+var API={simular:simular,planFijo:planFijo,metrosEnTurnos:metrosEnTurnos};
 if(typeof module!=='undefined'&&module.exports)module.exports=API;else{root.SVE=root.SVE||{};root.SVE.CIC=API}
 })(this);
