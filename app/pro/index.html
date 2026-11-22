@@ -115,7 +115,7 @@ td input{min-height:30px;padding:3px 6px;max-width:90px}
 <div class="toast" id="toast" hidden></div>
 <script src="../vendor/supabase-2.118.0.js"></script>
 <script src="config.js?v=20261118c"></script>
-<script src="engine.js?v=20261121a"></script>
+<script src="engine.js?v=20261122a"></script>
 <script src="engine-geo.js?v=20261118c"></script>
 <script src="engine-lh.js?v=20261120d"></script>
 <script src="engine-onda.js?v=20261118c"></script>
@@ -394,7 +394,7 @@ function vDiseno(){var g=D.geom,est=R.estado==='conforme'?'ok':R.estado==='revis
   h+='<div id="pRec"></div>'+panelMapa()+panelInic()+panelModelo()+panelZonas()+panelVariantes()+panelRevision()+panelFormulas();
   h+='<div class="panel"><div class="ph"><h3>Cómo se calculó</h3></div><div style="font-size:13px;display:grid;gap:5px">'+
    '<div>Sección '+(g.forma==='rect'?'rectangular':'en herradura')+' de '+f2(g.W)+' × '+f2(g.H)+' m → área '+f2(R.A)+' m². Avance '+f2(g.L)+' m × '+g.eff+' % = '+f2(R.av)+' m → '+f1(R.vol)+' m³ × '+f2(D.roca.dens)+' t/m³ = '+f0(R.ton)+' t.</div>'+
-   '<div>Carga lineal q = π/4·(Ø·acopl.)²·ρ = π/4·('+D.malla.d+' mm·'+D.malla.acopl+')²·'+f2(R.prod.rho)+' = '+f2(R.q)+' kg/m.</div>'+
+   '<div>Carga lineal q = π/4·(Ø·acopl.)²·ρ = π/4·('+D.malla.d+' mm·'+R.d.malla.acopl+')²·'+f2(R.prod.rho)+' = '+f2(R.q)+' kg/m.</div>'+
    '<div>Corte: Ø equivalente de alivio = √n·Ø = '+f0(R.phiEq*1000)+' mm → avance máximo 0,15 + 34,1·Ø − 39,4·Ø² = '+f2(R.Lmax)+' m (Holmberg).</div>'+
    (R.corte&&R.corte.secs&&R.corte.secs.length>1?'<div>Cuele Holmberg: sección 1 a 1,5·Ø = '+f2(R.corte.secs[0].dist)+' m; siguientes B = 0,088·√(W·q·s / (d·c)) − error de perforación, girando 45° hasta que el lado supere √L = '+f2(Math.sqrt(D.geom.L))+' m → '+R.corte.secs.map(function(sc){return 'S'+sc.n+' B '+f2(sc.B)+' / lado '+f2(sc.W)}).join(' · ')+' m. Los barrenos del cuele que caen sobre zapateras o contorno se omiten.</div>':'')+
    '<div>Burden sugerido (Holmberg para túneles, base Langefors): B<sub>máx</sub> = 0,9·√(q·s / (c̄·f·E/B)) = 0,9·√('+f2(R.q)+'·'+f2(R.prod.rws/100)+' / ('+f2(R.cbar)+'·'+f2(R.f)+'·'+f2(D.malla.E/D.malla.B)+')) = '+f2(R.Bmax)+' m; menos el error de perforación 0,05 + 0,03·L = '+f2(R.errP)+' m → <b>'+f2(R.Bsug)+' m</b>. '+esc(R.cR?R.cR.txt:'')+' → c̄ = '+f2(R.cbar)+'.</div>'+

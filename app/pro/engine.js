@@ -183,6 +183,9 @@ function num(v,def,a,b){v=+v;return clamp(isFinite(v)&&v!==0?v:def,a,b)}
 function disenar(d,cat){d=JSON.parse(JSON.stringify(d));var g=d.geom,ml=d.malla,ro=d.roca,ex=prod(d.exp.id,cat);
   g.W=num(g.W,3,1,20);g.H=num(g.H,3,1,20);g.L=num(g.L,2.4,0.3,8);g.eff=num(g.eff,90,10,100);ml.d=num(ml.d,38,20,200);ml.B=num(ml.B,0.8,0.2,5);ml.E=num(ml.E,0.9,0.2,6);ml.acopl=num(ml.acopl,0.9,0.3,1);
   var A=area(g),av=g.L*g.eff/100,vol=A*av,ton=vol*ro.dens,kr=kRoca(ro),dm=ml.d/1000;
+  /* tope físico: un cartucho atacado se expande ~12 % en diámetro; no puede llenar un barreno mucho mayor.
+     Validado con casos publicados: Ø45 mm con cartucho de 1¼" carga ≈ 1,0–1,1 kg/m, no 1,5. */
+  var acoplPide=ml.acopl,acoplMax=ex.cart?Math.min(1,ex.cart[0]*25.4/ml.d*1.12):1;if(ml.acopl>acoplMax){ml.acoplPide=acoplPide;ml.acopl=Math.round(acoplMax*100)/100}
   var q=cargaLineal(ml.d,ml.acopl,ex.rho);
   // burden sugerido (Langefors simplificado, corregido por roca)
   var s=ex.rws/100,f=1.45,EB=(ml.E/ml.B)||1.25,G0=GEOf(),CR=G0?G0.cRoca({modo:ro.cModo,c:ro.c,q:ro.q,ucs:ro.ucs,kr:kr}):{modo:'auto',c:0.4*kr*kr,cbar:0.4*kr*kr+0.05,txt:''},cU=CR.modo!=='auto'?1:null,c=CR.c,cbar=CR.cbar;
@@ -298,6 +301,7 @@ function analizar(R){var d=R.d,v=d.vibr,ml=d.malla,g=d.geom;
   R.qCuele=cuS?kgCu/(cuS.W*cuS.W*g.L):null;
   R.formulas=formulasUsadas(R,d);
   var al2=[];function chk(ok,warn,txt,acc,k){al2.push({nivel:ok?'ok':warn?'aviso':'error',txt:txt,acc:acc||'',k:k})}
+  if(R.d.malla.acoplPide)chk(false,true,'Acoplamiento limitado a '+r2(R.d.malla.acopl)+': un cartucho de '+R.prod.cart[0]+'" atacado no llena un barreno de Ø'+R.d.malla.d+' mm (pediste '+r2(R.d.malla.acoplPide)+'). Carga lineal real '+r2(R.q)+' kg/m.','Usa un cartucho más grueso, explosivo a granel o un barreno más chico si necesitas más energía.','acopl');
   chk(R.contorno.ratio<=2,true,'Carga lineal del contorno '+r2(qC)+' kg/m; mínimo de recorte 90·d² = '+r2(qMin)+' kg/m ('+r2(R.contorno.ratio)+'×).',R.contorno.ratio>2?'Para voladura controlada baja la carga de contorno a ≈ '+R.contorno.pctSug+' % o usa cartuchos desacoplados / explosivo de baja densidad.':'','cont');
   if(R.contorno.EV)chk(R.contorno.EV>=0.6&&R.contorno.EV<=1.0,true,'Relación espaciamiento / burden del contorno E/V = '+r2(R.contorno.EV)+' (E '+r2(espC2)+' m, V medido '+r2(Vm)+' m). Rango de recorte 0,6–1,0.','Ajusta el burden de la fila vecina al contorno.','cont');
   chk(!(R.phiEq>0.25||R.phiEq<0.05),true,'Alivio equivalente '+Math.round(R.phiEq*1000)+' mm'+(R.phiEq>0.25||R.phiEq<0.05?': fuera del rango de la fórmula de Holmberg (50–250 mm); el avance máximo se limita y debe validarse en campo.':', dentro del rango de la fórmula de avance.'),'','corte');
