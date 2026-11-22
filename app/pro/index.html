@@ -93,7 +93,7 @@ td input{min-height:30px;padding:3px 6px;max-width:90px}
 <div id="gate" class="gate" hidden></div>
 <div class="wrap" id="app" hidden>
   <aside class="side">
-    <div id="ban"></div>
+    <div id="geoBan"></div><div id="ban"></div>
     <div class="panel" style="margin-bottom:10px;padding:10px"><div class="seg" id="tipoSeg" style="display:flex"><button type="button" data-tipo="dev" style="flex:1">Desarrollo · frente</button><button type="button" data-tipo="larga" style="flex:1">Barrenación larga · tajo</button></div></div>
     <div class="panel"><div class="meta">
       <label class="f full">Nombre del diseño<input id="mNombre" placeholder="Ej.: Galería 3×3 · roca regular"></label>
@@ -741,10 +741,11 @@ function renderAll(){calc();updSummaries();fillInputs();['diseno','carga','real'
   if(S.tab==='diseno')(LHm()?vDisenoLH:vDiseno)();else if(S.tab==='carga')(LHm()?vCargaLH:vCarga)();else if(S.tab==='real')vReal();else if(S.tab==='onda')vOnda();else vBiblio();
   $('#saveSt').textContent=S.dirty?'Cambios sin guardar':(S.id?'Guardado':'');var ban='';
   if(RESCATE)ban+='<div class="banner info">La página se cerró antes de terminar de cargar y la abrimos con valores iniciales. Tu borrador anterior quedó respaldado en este equipo.</div>';
+  geoBan();
   if(S.demo)ban+='<div class="banner info demo"><span><b>Demo gratuita, sin cuenta.</b> Todo se calcula en vivo; nada se guarda. Con tu cuenta el diseño queda para toda la mina, ligado a tus disparos reales y calibrado con tu sismógrafo.</span><a class="btn sm" href="../?alta=1">Crear mi mina gratis</a><a class="btn g sm" href="../">Ingresar</a></div>';
   else if(!S.pro)ban+='<div class="banner warn">Estás viendo Voladura Pro sin el plan Pro activo: puedes calcular, pero no guardar diseños ni lecturas. <a class="btn sm" href="../">Volver a la app</a></div>';
   $('#ban').innerHTML=ban;$('#bGuardar').disabled=!S.demo&&!S.pro||!(S.rol==='admin'||S.rol==='colaborador')}
-var rt;function changed(full){S.dirty=true;try{localStorage.setItem('svp-borrador',JSON.stringify(D))}catch(e){}clearTimeout(rt);rt=setTimeout(function(){if(full)renderAll();else{calc();updSummaries();if(S.tab==='diseno')(LHm()?vDisenoLH:vDiseno)();else renderAll()}},90)}
+var rt;function changed(full){S.dirty=true;try{localStorage.setItem('svp-borrador',JSON.stringify(D))}catch(e){}clearTimeout(rt);rt=setTimeout(function(){geoBan();if(full)renderAll();else{calc();updSummaries();if(S.tab==='diseno')(LHm()?vDisenoLH:vDiseno)();else renderAll()}},90)}
 
 /* ---------- eventos ---------- */
 document.addEventListener('input',function(e){var el=e.target;if(el.dataset.pl!=null){S.perf.lect[+el.dataset.pl].dist=el.value;return}if(el.id==='pXY'){S.perf.xy=el.value;return}if(el.id==='pShot'){S.perf.shot=el.value;return}if(el.dataset.p){var v=el.type==='number'?(el.value===''?null:+el.value):(el.value==='true'?true:el.value==='false'?false:el.value);set(D,el.dataset.p,v);changed();return}
@@ -752,7 +753,17 @@ document.addEventListener('input',function(e){var el=e.target;if(el.dataset.pl!=
   if(el.dataset.est){var pe=el.dataset.est.split('|'),ei=+pe[0];D.estaciones[ei][pe[1]]=el.value===''?null:+el.value;changed();return}
   if(el.id==='mNombre'){D.nombre=el.value;S.dirty=true;return}if(el.id==='mResp'){D.responsable=el.value;S.dirty=true;return}
   if(el.dataset.cost){var v2=+el.value;if(!isFinite(v2))return;if(el.dataset.cost==='__exp'){S.cat=S.cat.map(function(p){return p.id===D.exp.id?Object.assign({},p,{precio:v2}):p});D.precioExp=v2}else D.costos[el.dataset.cost]=v2;S.dirty=true;clearTimeout(rt);rt=setTimeout(function(){calc();var a=document.activeElement&&document.activeElement.dataset.cost;vCarga();if(a){var n=document.querySelector('[data-cost="'+a+'"]');if(n){n.focus();n.select&&n.select()}}},500)}});
-document.addEventListener('change',function(e){var el=e.target;if(el.id==='mFrente'){D.frente=el.value;var f=S.frentes[el.value];if(f){if(D.geom){if(+f.ancho)D.geom.W=+f.ancho;if(+f.alto)D.geom.H=+f.alto}if(!D.nombre)D.nombre=f.nombre}changed(true)}});
+/* ficha geomecánica del frente (módulo 4): al elegir el frente, el diseño toma su roca */
+function geoBan(){var el=document.getElementById('geoBan');if(!el)return;var gf=S.frentes&&D.frente&&S.frentes[D.frente],gg=gf&&gf.geo&&gf.geo.res;
+  el.innerHTML=gg&&geoDifiere()?'<div class="banner info" style="margin-bottom:10px"><span><b>Ficha geomecánica de '+esc(gf.nombre)+':</b> clase '+esc(gg.clase)+' · RMR '+Math.round(gg.rmr)+' · Q '+(+(LHm()&&gg.qp!=null?gg.qp:gg.q)).toFixed(2).replace('.',',')+(gg.ucs?' · UCS '+Math.round(gg.ucs)+' MPa':'')+'. El diseño usa otros valores de roca.</span><button type="button" class="btn sm" data-geo="1">Usar la ficha</button></div>':''}
+function geoDe(f){return f&&f.geo&&f.geo.res?f.geo:null}
+function geoAplicar(f){var g=geoDe(f);if(!g)return false;var r=g.res,i=g.in||{};
+  if(LHm()){if(D.veta){if(r.rmr!=null)D.veta.rmr=Math.round(r.rmr);if(r.qp!=null)D.veta.q=+(+r.qp).toFixed(2);['A','B','C'].forEach(function(k){if(i[k]!=null)D.veta[k]=+i[k]});if(r.ucs)D.veta.ucs=+r.ucs;D.veta.auto=false}}
+  else if(D.roca){if(r.rmr!=null)D.roca.rmr=Math.round(r.rmr);if(r.q!=null)D.roca.q=+(+r.q).toFixed(2);if(r.ucs)D.roca.ucs=+r.ucs}
+  return true}
+function geoDifiere(){var f=S.frentes[D.frente],g=geoDe(f);if(!g)return false;var r=g.res;if(LHm())return D.veta&&(Math.round(r.rmr)!==+D.veta.rmr||(r.qp!=null&&Math.abs(+D.veta.q-r.qp)>0.01));return D.roca&&(Math.round(r.rmr)!==+D.roca.rmr||(r.q!=null&&Math.abs(+(D.roca.q||0)-r.q)>0.01))}
+document.addEventListener('change',function(e){var el=e.target;if(el.id==='mFrente'){D.frente=el.value;var f=S.frentes[el.value];if(f){if(D.geom){if(+f.ancho)D.geom.W=+f.ancho;if(+f.alto)D.geom.H=+f.alto}if(!D.nombre)D.nombre=f.nombre;if(geoAplicar(f))toast('Se usó la ficha geomecánica del frente: clase '+f.geo.res.clase+', RMR '+Math.round(f.geo.res.rmr))}changed(true)}});
+document.addEventListener('click',function(e){var b=e.target.closest&&e.target.closest('[data-geo]');if(!b)return;var f=S.frentes[D.frente];if(geoAplicar(f)){toast('Roca actualizada desde la ficha geomecánica');changed(true)}});
 document.addEventListener('change',function(e){var el=e.target;if(el.id==='pShot'){S.perf.shot=el.value;vReal();return}
   if(!el.files||!el.files[0]||['pFile','sisFile','desvFile'].indexOf(el.id)<0)return;var f=el.files[0];if(f.size>5e6){toast('Archivo demasiado grande');return}var rd=new FileReader();rd.onload=function(){var t=String(rd.result);
    if(el.id==='pFile'){S.perf.xy=t;S.perf.modo='xy';vReal()}

@@ -390,6 +390,7 @@ details.calc pre{white-space:pre-wrap;font:12px/1.65 var(--f-mono);background:va
           <div class="panel"><div class="ph"><h3>Frentes de trabajo</h3><button class="r btn sm w" data-act="newFrente">Agregar frente</button></div>
             <form id="frForm" hidden style="margin-bottom:14px"></form>
             <div class="tbl"><table id="frTbl"></table></div></div>
+          <form class="panel" id="geoForm" hidden></form>
           <div class="g2">
             <div class="panel"><div class="ph"><h3>Equipo de trabajo</h3></div>
               <p class="claudeOnly" style="margin:0 0 8px;font-size:14px">Todos trabajan sobre los mismos datos en tiempo real. Para sumar a alguien, usa <b>Compartir</b> en esta página:</p>
@@ -439,7 +440,7 @@ details.calc pre{white-space:pre-wrap;font:12px/1.65 var(--f-mono);background:va
   <div class="brand"><img src="icons/icon-192.png" alt="" width="64" height="64" style="display:block;margin:0 auto 10px;border-radius:14px">STRUCT<b>IAR</b> MINA<small>Gestión de mina · prueba gratis de 7 días</small></div>
   <div class="card" id="authCard"></div>
 </div></div>
-<script src="pro/engine-ciclo.js?v=20261123a"></script><script src="vendor/supabase-2.118.0.js"></script>
+<script src="pro/engine-ciclo.js?v=20261123a"></script><script src="pro/engine-geomec.js?v=20261123a"></script><script src="vendor/supabase-2.118.0.js"></script>
 <script>
 (function(){'use strict';
 var S=window.STRUCTIAR_CFG||{};
@@ -1498,8 +1499,8 @@ function renderMina(full){
   $('#mHoras').value=String(c.turnoHoras);$('#mInt').value=String(c.intervalo);$('#mHoras').disabled=dis;$('#mInt').disabled=dis;
   $('#cfgNote').textContent=dis?(window.__mina?'Solo un administrador de la mina puede cambiar estos datos':'Solo un Editor puede cambiar estos datos'):'';
   var st={};arr('disparos').forEach(function(d){var o=st[d.frente]=st[d.frente]||{n:0,av:0,e:0};o.n++;o.av+=num(d.avance);o.e+=calc(d).eff});
-  $('#frTbl').innerHTML='<thead><tr><th>Frente</th><th>Tipo</th><th class="n">Sección m</th><th class="n">Disparos</th><th class="n">Avance m</th><th>Eficiencia</th><th>Estado</th><th class="w"></th></tr></thead><tbody>'+
-   (arr('frentes').length?arr('frentes').sort(function(a,b){return a.nombre.localeCompare(b.nombre)}).map(function(f){var o=st[f.id],e=o?o.e/o.n:0;return '<tr><td><b>'+esc(f.nombre)+'</b></td><td>'+esc(f.tipo)+'</td><td class="n">'+f1(num(f.ancho))+' × '+f1(num(f.alto))+'</td><td class="n">'+(o?o.n:0)+'</td><td class="n">'+(o?f1(o.av):'0,0')+'</td><td>'+(o?'<span class="pill '+effClass(e)+'">'+f0(e)+' %</span>':'<span class="mute">—</span>')+'</td><td><span class="pill '+(f.activo?'ok':'n')+'">'+(f.activo?'Activo':'Pausado')+'</span></td><td class="w"><button class="btn ghost sm" data-act="editFr" data-id="'+esc(f.id)+'">Editar</button></td></tr>'}).join(''):'<tr><td colspan="8" class="mute">Agrega tu primer frente para empezar.</td></tr>')+'</tbody>';
+  $('#frTbl').innerHTML='<thead><tr><th>Frente</th><th>Tipo</th><th class="n">Sección m</th><th class="n">Disparos</th><th class="n">Avance m</th><th>Eficiencia</th><th>Roca</th><th>Estado</th><th class="w"></th></tr></thead><tbody>'+
+   (arr('frentes').length?arr('frentes').sort(function(a,b){return a.nombre.localeCompare(b.nombre)}).map(function(f){var o=st[f.id],e=o?o.e/o.n:0;return '<tr><td><b>'+esc(f.nombre)+'</b></td><td>'+esc(f.tipo)+'</td><td class="n">'+f1(num(f.ancho))+' × '+f1(num(f.alto))+'</td><td class="n">'+(o?o.n:0)+'</td><td class="n">'+(o?f1(o.av):'0,0')+'</td><td>'+(o?'<span class="pill '+effClass(e)+'">'+f0(e)+' %</span>':'<span class="mute">—</span>')+'</td><td>'+(f.roca?'Clase '+esc(f.roca):'<span class="mute">—</span>')+(f.geo&&f.geo.res?'<br><small class="mute">Q '+f2(f.geo.res.q)+' · RMR '+f0(f.geo.res.rmr)+'</small>':'')+'</td><td><span class="pill '+(f.activo?'ok':'n')+'">'+(f.activo?'Activo':'Pausado')+'</span></td><td class="w"><button class="btn ghost sm" data-act="geoFr" data-id="'+esc(f.id)+'">Geomecánica</button> <button class="btn ghost sm" data-act="editFr" data-id="'+esc(f.id)+'">Editar</button></td></tr>'}).join(''):'<tr><td colspan="9" class="mute">Agrega tu primer frente para empezar.</td></tr>')+'</tbody>';
   if(full)frForm();if(window.__structiarTeam)window.__structiarTeam();
   $('#roleNote').textContent=mode==='db'?('Tu acceso: '+(canAdmin?'Editor':canWrite?'Colaborador':'Lector')+'.'):'Ahora mismo los datos se guardan solo en este equipo. Abre la página con tu cuenta de Claude para compartirlos.';
   var b='<button class="btn sm" data-act="csvDisp">Disparos (CSV)</button><button class="btn sm" data-act="csvCtrl">Controles de turno (CSV)</button><button class="btn sm" data-act="csvPar">Paradas de equipos (CSV)</button><button class="btn ghost sm" data-act="copyBackup">Copiar respaldo</button>';
@@ -1508,6 +1509,30 @@ function renderMina(full){
   else if(mode==='db'&&canAdmin&&!window.__mina&&!arr('frentes').length)b+='<button class="btn ghost sm" data-act="loadDemo">Cargar ejemplo</button>';
   $('#dataBtns').innerHTML=b;
 }
+/* ================= GEOMECÁNICA (módulo 4): una ficha por frente =================
+   Q de Barton, RMR (medido o desde la Q), clase I–V que alimenta al resto de la app, claro máximo sin
+   sostener y largo de perno (Barton), estándar de sostenimiento de la mina y N′ para tajos. */
+var GEOF=[['rqd','RQD (%)',1],['jn','Jn · familias de juntas',0.5],['jr','Jr · rugosidad',0.5],['ja','Ja · alteración',0.25],['jw','Jw · agua',0.05],['srf','SRF · esfuerzos',0.5],['rmr','RMR medido (opcional)',1],['ucs','UCS (MPa)',5]];
+function geoLeer(){var g={};GEOF.forEach(function(k){var v=$('#g_'+k[0]);if(v&&v.value!=='')g[k[0]]=num(v.value)});var p=$('#g_perm');g.perm=p?p.value:'perm';['A','B','C'].forEach(function(k){var v=$('#g_'+k);if(v&&v.value!=='')g[k]=num(v.value)});return g}
+function geoRes(fr,g){if(!window.SVE||!SVE.GM)return null;return SVE.GM.evaluar(g,fr)}
+function geoResHTML(fr,r){if(!r)return '<p class="note">Completa RQD, Jn, Jr y Ja (o el RMR medido) para calcular.</p>';var P=pro(),std=P.std[r.clase]||'';
+  return '<div class="kpis" style="margin-top:12px"><div class="kpi a"><div class="l">Calidad de roca</div><div class="v">Clase '+r.clase+'</div><div class="s">'+r.claseNombre+' · RMR '+f0(r.rmr)+(r.rmrMedido!=null?' medido':' desde la Q')+'</div></div>'+
+   '<div class="kpi"><div class="l">Q de Barton</div><div class="v">'+f2(r.q)+'</div><div class="s">equivale a RMR '+f0(r.rmrDeQ)+(r.difRmr!=null?' · diferencia '+f0(r.difRmr):'')+'</div></div>'+
+   '<div class="kpi '+(r.necesitaSost?'warn':'ok')+'"><div class="l">Claro máximo sin sostener</div><div class="v">'+f1(r.spanMax)+'<small>m</small></div><div class="s">ancho del frente '+f1(num(fr.ancho))+' m · ESR '+f1(r.esr)+'</div></div>'+
+   '<div class="kpi"><div class="l">Largo de perno</div><div class="v">'+f1(r.perno)+'<small>m</small></div><div class="s">L = 2 + 0,15 · ancho / ESR</div></div>'+(r.Np!=null?'<div class="kpi"><div class="l">N′ de estabilidad (tajo)</div><div class="v">'+f1(r.Np)+'</div><div class="s">Q′ '+f2(r.qp)+' · A · B · C</div></div>':'')+'</div>'+
+   '<div class="banner '+(r.necesitaSost?'warn':'info')+'" style="margin-top:10px"><span><b>Sostenimiento:</b> '+(r.necesitaSost?'sistemático. ':'el frente es estable sin sostenimiento sistemático según Barton; aplica igual el estándar de la mina. ')+'Estándar de la mina para clase '+r.clase+': '+esc(std)+'.</span></div>'+
+   (r.alertas.length?'<ul style="margin:8px 0 0;padding-left:18px">'+r.alertas.map(function(a){return '<li>'+esc(a)+'</li>'}).join('')+'</ul>':'')}
+function geoForm(){var fm=$('#geoForm');if(!fm)return;var fr=ui.geoFr&&D.frentes[ui.geoFr];if(!fr){fm.hidden=true;fm.innerHTML='';return}
+  var g=(fr.geo&&fr.geo.in)||{},tajo=fr.tipo==='Tajo',dis=!canWrite;
+  function nf(k){return '<label class="f">'+k[1]+'<input type="number" min="0" step="'+k[2]+'" id="g_'+k[0]+'" value="'+(g[k[0]]!=null?g[k[0]]:'')+'"'+(dis?' disabled':'')+'></label>'}
+  fm.hidden=false;fm.innerHTML='<div class="ph"><h3>Ficha geomecánica · '+esc(fr.nombre)+'</h3><small>una sola ficha por frente: la usan el diseño de voladura, el sostenimiento y la dilución</small></div>'+
+   '<div class="fields">'+GEOF.map(nf).join('')+'<label class="f">Tipo de labor<select id="g_perm"'+(dis?' disabled':'')+'>'+opts([['perm','Permanente · galería, rampa, crucero (ESR 1,6)'],['temp','Temporal · tajo, subnivel (ESR 3,0)']],g.perm||(tajo?'temp':'perm'))+'</select></label>'+
+   (tajo?['A','B','C'].map(function(k){return '<label class="f">Factor '+k+' (Mathews)<input type="number" min="0" step="0.05" id="g_'+k+'" value="'+(g[k]!=null?g[k]:'')+'"'+(dis?' disabled':'')+'></label>'}).join(''):'')+'</div>'+
+   '<div id="geoRes">'+geoResHTML(fr,geoRes(fr,g))+'</div>'+
+   '<p class="note">Q = (RQD/Jn)·(Jr/Ja)·(Jw/SRF), Barton et al. (1974). RMR = 9·ln Q + 44, Bieniawski (1976). Claro máximo sin sostener = 2·ESR·Q^0,4. Al guardar, la clase de roca del frente se actualiza en voladura, QAQC y el diseño Pro.</p>'+
+   '<div class="row" style="margin-top:10px">'+(dis?'':'<button class="btn" type="submit">Guardar ficha</button>')+'<button class="btn ghost" type="button" data-act="geoCancel">Cerrar</button></div>'}
+document.addEventListener('input',function(e){if(!e.target||!e.target.id||e.target.id.indexOf('g_')!==0)return;var fr=ui.geoFr&&D.frentes[ui.geoFr];if(!fr)return;$('#geoRes').innerHTML=geoResHTML(fr,geoRes(fr,geoLeer()))});
+document.addEventListener('change',function(e){if(e.target&&e.target.id==='g_perm'){var fr=ui.geoFr&&D.frentes[ui.geoFr];if(fr)$('#geoRes').innerHTML=geoResHTML(fr,geoRes(fr,geoLeer()))}});
 function frForm(){var fm=$('#frForm');if(ui.editFr===null){fm.hidden=true;fm.innerHTML='';return}
   var f=ui.editFr==='new'?{nombre:'',tipo:'Galería',ancho:2,alto:2.2,activo:true}:D.frentes[ui.editFr];if(!f){ui.editFr=null;fm.hidden=true;return}
   fm.hidden=false;fm.innerHTML='<div class="fields"><label class="f full">Nombre del frente<input id="frN" required value="'+esc(f.nombre)+'" placeholder="Ej.: Galería 3 Veta Norte"></label><label class="f">Tipo<select id="frT">'+opts(TIPOFR,f.tipo)+'</select></label><label class="f">Ancho (m)<input type="number" id="frA" step="0.1" min="0" value="'+esc(f.ancho)+'"></label><label class="f">Alto (m)<input type="number" id="frH" step="0.1" min="0" value="'+esc(f.alto)+'"></label><label class="f">Estado<select id="frE"><option value="1"'+(f.activo?' selected':'')+'>Activo</option><option value="0"'+(!f.activo?' selected':'')+'>Pausado</option></select></label></div>'+
@@ -1554,6 +1579,8 @@ document.addEventListener('click',function(e){
   case 'delCard':del('tareas',ui.editCard);ui.editCard=null;ui.confirm=null;renderCardForm();toast('Tarea borrada');return;
   case 'progSem':var rp=pmFr(D.frentes[id],nowShift().fecha.slice(0,7));progSemana(rp);return;
   case 'parBy':ui.parBy=b.dataset.v==='fr'?'fr':'causa';schedule(true);return;
+  case 'geoFr':ui.geoFr=ui.geoFr===id?null:id;geoForm();if(ui.geoFr)$('#geoForm').scrollIntoView({block:'start',behavior:'smooth'});return;
+  case 'geoCancel':ui.geoFr=null;geoForm();return;
   case 'mv':var x=D.tareas[id];if(!x)return;var ci=COLS.map(function(c){return c[0]}).indexOf(x.col)+(+b.dataset.d);if(ci>=0&&ci<4)moveCard(id,COLS[ci][0]);return;
   case 'copyPlan':var c=curT(),p=prevShift(c.f,c.i),pt=tGet(p.f,p.i),t=Object.assign({},tGet(c.f,c.i));t.plan=Object.assign({},pt.plan);put('turnos',t);toast('Meta copiada del turno anterior');return;
   case 'mkAction':var ct=D.controles[id];if(ct){var tid=mkAction(ct.fecha,ct.i,ct);patch('controles',id,{tareaId:tid});toast('Acción creada en el tablero')}return;
@@ -1599,6 +1626,9 @@ document.addEventListener('submit',function(e){
     var cc=calc(s),tk2=arr('tareas').filter(function(t){return t.frente===s.frente&&t.tipo==='Avance'&&t.col==='curso'})[0];
     vDraft=Object.assign({},d,{kg:'',avance:'',nota:''});$('#volForm').innerHTML='';schedule();
     toast('Disparo guardado: '+f2(s.avance)+' m, '+f0(cc.eff)+' %. Suma al '+sLabel(s.turno).toLowerCase()+'.'+(tk2?' Tarea en curso: '+tk2.titulo:''));return}
+  if(f.id==='geoForm'){var frg=ui.geoFr&&D.frentes[ui.geoFr];if(!frg||!canWrite)return;var gi=geoLeer(),rg=geoRes(frg,gi);if(!rg){toast('Faltan datos: RQD, Jn, Jr y Ja, o el RMR medido');return}
+    patch('frentes',frg.id,{geo:{in:gi,res:{q:+rg.q.toFixed(3),qp:rg.qp!=null?+rg.qp.toFixed(3):null,rmr:+rg.rmr.toFixed(1),clase:rg.clase,spanMax:+rg.spanMax.toFixed(2),perno:+rg.perno.toFixed(2),Np:rg.Np!=null?+rg.Np.toFixed(2):null,ucs:rg.ucs},fecha:nowShift().fecha},roca:rg.clase});
+    ui.geoFr=null;geoForm();toast('Ficha guardada: clase '+rg.clase+' para '+frg.nombre);return}
   if(f.id==='frForm'){var nm=$('#frN').value.trim();if(!nm){$('#frN').focus();return}
     var fr=ui.editFr==='new'?{id:uid()}:Object.assign({},D.frentes[ui.editFr]);fr.nombre=nm;fr.tipo=$('#frT').value;fr.ancho=num($('#frA').value);fr.alto=num($('#frH').value);fr.activo=$('#frE').value==='1';
     put('frentes',fr);ui.editFr=null;ui.confirm=null;vDraft=null;frForm();toast('Frente guardado');return}
