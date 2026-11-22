@@ -117,10 +117,10 @@ td input{min-height:30px;padding:3px 6px;max-width:90px}
 <script src="config.js?v=20261118c"></script>
 <script src="engine.js?v=20261122a"></script>
 <script src="engine-geo.js?v=20261118c"></script>
-<script src="engine-lh.js?v=20261120d"></script>
+<script src="engine-lh.js?v=20261122a"></script>
 <script src="engine-onda.js?v=20261118c"></script>
 <script src="engine-calib.js?v=20261119a"></script>
-<script src="engine-opt.js?v=20261120a"></script>
+<script src="engine-opt.js?v=20261120a"></script><script src="engine-ciclo.js?v=20261122a"></script>
 <script>
 (function(){'use strict';
 var E=window.SVE,C=window.STRUCTIAR_CFG||{},sb=null;try{sb=supabase.createClient(C.url,C.key,{auth:{persistSession:true,autoRefreshToken:true}})}catch(e){}
@@ -436,7 +436,35 @@ function vCarga(){var c=R.costo,P=E.planCarga(R);
    (D.costos.booster?'<tr><td>Iniciación</td><td>Booster / cebo</td><td class="n">'+R.nCarg+' u</td><td></td></tr>':'')+
    P.dets.map(function(x){return '<tr><td>Iniciación</td><td>Detonador N° '+x.p+' · '+f0(x.ms)+' ms</td><td class="n">'+x.n+' u</td><td>manguera '+f1(x.mang)+' m</td></tr>'}).join('')+
    '<tr><td>Iniciación</td><td>Línea de inicio (mecha de seguridad, fulminante, cordón o conectores)</td><td class="n">1 juego</td><td></td></tr></tbody></table></div><p class="note">'+R.nCarg+' detonadores para '+R.nCarg+' barrenos cargados. Manguera = barreno + 1 m, al largo comercial. Agrega la reserva que exija el procedimiento del polvorín.</p></div>';
-  $('#t-carga').innerHTML=h}
+  h+=panelCiclo();$('#t-carga').innerHTML=h;cicCalc()}
+
+/* ---------- pronóstico de avance: Monte Carlo del ciclo con turnos (Vargas et al., TUST 2014) ---------- */
+var CIC0={largo:200,turnosDia:2,turno:540,tol:60,reinicio:30,effDesv:5,ops:[['Perforación',195,38],['Carguío y voladura',56,12],['Ventilación',90,0],['Desatado / acuñadura',26,7],['Limpieza / rezaga',70,20],['Sostenimiento',0,0]]};
+function cicD(){if(!D.ciclo||!D.ciclo.ops)D.ciclo=JSON.parse(JSON.stringify(CIC0));return D.ciclo}
+function panelCiclo(){if(!(E&&window.SVE&&SVE.CIC))return '';var c=cicD();
+  function n(k,l,u,st){return '<label class="f">'+l+'<input type="number" step="'+(st||1)+'" min="0" data-cic="'+k+'" value="'+(c[k]!=null?c[k]:'')+'">'+(u?'<small class="mute">'+u+'</small>':'')+'</label>'}
+  return '<div class="panel"><div class="ph"><h3>Pronóstico de avance · ¿cuándo termino la labor?</h3><small class="mute">Monte Carlo del ciclo con turnos</small></div>'+
+   '<div class="meta" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">'+n('largo','Metros por excavar','m')+n('turnosDia','Turnos por día','')+n('turno','Minutos efectivos por turno','min')+n('tol','No empezar una operación si quedan menos de','min')+n('reinicio','Reinicio de una operación cortada','min')+n('effDesv','Variación de la eficiencia de avance','± %',0.5)+'</div>'+
+   '<div class="tbl" style="margin-top:8px"><table style="min-width:0;width:100%"><thead><tr><th style="white-space:normal">Operación (min)</th><th class="n" style="padding:6px 4px">Media</th><th class="n" style="padding:6px 4px">Desv.</th></tr></thead><tbody>'+
+   c.ops.map(function(o,i){return '<tr><td style="white-space:normal">'+esc(o[0])+'</td><td class="n" style="padding:6px 4px"><input type="number" min="0" step="1" style="width:62px" data-cico="'+i+':1" value="'+o[1]+'"></td><td class="n" style="padding:6px 4px"><input type="number" min="0" step="1" style="width:62px" data-cico="'+i+':2" value="'+o[2]+'"></td></tr>'}).join('')+
+   '</tbody></table></div><div id="cicRes" style="margin-top:10px"></div>'+
+   '<p class="note">Avance por disparo = barreno de '+f2(R.d.geom.L)+' m × eficiencia de '+f0(R.d.geom.eff)+' % (paso 1). Los tiempos iniciales son los medidos con cronómetro en la Mina San Pedro, Chile (galería 3,5×3,0 m, barrenos de 1,8 m). Con ellos el modelo dio 269 turnos y la obra real tomó 266 (Vargas, Koppe y Pérez, <i>Tunnelling and Underground Space Technology</i> 40, 2014). Reemplázalos con los tiempos de tu mina.</p></div>'}
+var cicT;function cicCalc(){var el=document.getElementById('cicRes');if(!el||!window.SVE||!SVE.CIC)return;var c=cicD(),g=R.d.geom;
+  var p={ops:c.ops.filter(function(o){return +o[1]>0}).map(function(o){return {n:o[0],media:+o[1],desv:+o[2]||0,min:+o[1]>0?Math.max(1,+o[1]*0.35):0}}),turno:+c.turno||540,tol:Math.min(+c.tol||0,(+c.turno||540)*0.5),reinicio:+c.reinicio||0,turnosDia:Math.max(1,Math.min(4,+c.turnosDia||2)),L:+g.L,eff:+g.eff,effDesv:+c.effDesv||0,largo:Math.max(1,Math.min(20000,+c.largo||1))};p.sims=Math.max(150,Math.min(1500,Math.round(2e6/((p.largo/Math.max(0.3,p.L*p.eff/100))*Math.max(1,p.ops.length)))));
+  if(!p.ops.length){el.innerHTML='<p class="note">Escribe la duración de al menos una operación.</p>';return}
+  if(!(+c.largo>0)){el.innerHTML='<p class="note">Escribe los metros por excavar.</p>';return}
+  var Rs=SVE.CIC.simular(p),F=SVE.CIC.planFijo(p);if(!Rs){el.innerHTML='';return}
+  var h=Rs.hist,lo=h[0],hi=h[h.length-1],nb=Math.max(1,Math.min(24,hi-lo+1)),w=(hi-lo+1)/nb,b=new Array(nb).fill(0);h.forEach(function(x){b[Math.min(nb-1,Math.floor((x-lo)/w))]++});var mx=Math.max.apply(null,b);
+  var cyc=p.ops.reduce(function(a,o){return a+o.media},0);
+  el.innerHTML='<div class="kpis"><div class="kpi a"><div class="l">Termina en (P50)</div><div class="v">'+f0(Rs.dias.p50)+'<small>días</small></div><div class="s">'+Rs.turnos.p50+' turnos · 9 de cada 10 veces antes de '+f0(Rs.dias.p90)+' días</div></div>'+
+   '<div class="kpi"><div class="l">Avance esperado</div><div class="v">'+f1(Rs.mDia)+'<small>m/día</small></div><div class="s">'+f2(Rs.mTurno)+' m por turno · '+f2(Rs.ciclosTurno)+' ciclos por turno</div></div>'+
+   '<div class="kpi"><div class="l">Plan fijo (sin variabilidad)</div><div class="v">'+f0(F.dias)+'<small>días</small></div><div class="s">'+(Rs.dias.p50>F.dias*1.02?'subestima '+f0(Rs.dias.p50-F.dias)+' días':'coincide con la simulación')+' · ciclo medio '+f0(cyc)+' min</div></div></div>'+
+   '<div style="display:flex;align-items:flex-end;gap:2px;height:56px;margin-top:10px" aria-label="Distribución de turnos necesarios">'+b.map(function(v){return '<div title="'+v+' simulaciones" style="flex:1;background:var(--accent);opacity:.75;border-radius:2px 2px 0 0;height:'+Math.max(2,v/mx*100)+'%"></div>'}).join('')+'</div>'+
+   '<div class="mute" style="display:flex;justify-content:space-between;font-size:12px"><span>'+lo+' turnos</span><span>P10 '+Rs.turnos.p10+' · P50 '+Rs.turnos.p50+' · P90 '+Rs.turnos.p90+'</span><span>'+hi+' turnos</span></div>'+
+   (cyc>p.turno?'<div class="banner warn" style="margin-top:8px">El ciclo medio ('+f0(cyc)+' min) es más largo que el turno: cada disparo cruza de turno y se pierde tiempo en reinicios. Revisa la operación más larga o la configuración de turnos.</div>':'')}
+document.addEventListener('input',function(e){var el=e.target;if(!el.dataset)return;var c;
+  if(el.dataset.cic){c=cicD();c[el.dataset.cic]=el.value===''?null:+el.value}else if(el.dataset.cico){c=cicD();var k=el.dataset.cico.split(':');c.ops[+k[0]][+k[1]]=el.value===''?0:+el.value}else return;
+  S.dirty=true;try{localStorage.setItem('svp-borrador',JSON.stringify(D))}catch(x){}clearTimeout(cicT);cicT=setTimeout(cicCalc,250)});
 
 /* ---------- ficha de disparo (funciona sin conexión) y KPIs ---------- */
 function colaLeer(){try{return JSON.parse(localStorage.getItem('svp-cola'))||[]}catch(e){return []}}

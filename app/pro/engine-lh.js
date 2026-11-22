@@ -87,7 +87,9 @@ function mathews(d){var v=d.veta,b=d.bloque,G=GEOf(),auto=null;if(v.auto&&G&&(d.
   var fB=auto&&auto.B!=null?auto.B:+v.B,fC=auto?auto.C:+v.C,Np=(+v.q||0)*(+v.A||0)*(fB||0)*(fC||0);
   var altoInc=(b.H)/Math.sin(rad(clamp(v.dip,40,90))),HR=(b.largo*altoInc)/(2*(b.largo+altoInc));
   var est=HR<2.2*Math.pow(Math.max(Np,0.01),0.31)?'estable':HR<4.4*Math.pow(Math.max(Np,0.01),0.29)?'transición':'hundimiento';
-  var elosHW=Np>0?clamp(0.15*Math.pow(HR,1.15)/Math.pow(Np,0.4),0.05,4):null;
+  /* ELOS (Clark 1998 / Capes 2009) ajustado a 12 lecturas publicadas de caserones reales
+     (Gómez 2015, U. de Chile, mina selectiva, RH 2,7–5,2 y N' 2,4–7): error típico ±10 %. */
+  var elosHW=Np>0?clamp(0.73*Math.pow(HR,0.93)/Math.pow(Np,1.06),0.05,4):null;
   return {Np:Np,HR:HR,B:fB,C:fC,auto:auto,estado:Np>0?est:'sin datos',elosHW:elosHW,elosFW:elosHW!=null?elosHW*0.6:null}}
 function GEOf(){return (typeof root!=='undefined'&&root.SVE&&root.SVE.GEO)||(typeof require!=='undefined'?(function(){try{return require('./engine-geo.js')}catch(e){return null}})():null)}
 
