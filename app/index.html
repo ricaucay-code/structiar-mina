@@ -295,7 +295,7 @@ details.calc pre{white-space:pre-wrap;font:12px/1.65 var(--f-mono);background:va
             <div class="panel"><div class="ph"><h3>Necesita atención</h3></div><ul class="alerts" id="cAlerts"></ul></div>
           </div>
           <div class="g2">
-            <div class="panel"><div class="ph"><h3>Demoras de la semana</h3><small>minutos perdidos por causa · 7 días</small></div><div id="cPareto"></div></div>
+            <div class="panel"><div class="ph"><h3>Demoras de la semana</h3><small>horas perdidas · 7 días</small><span class="r seg" id="parSeg"></span></div><div id="cPareto"></div></div>
             <div class="panel"><div class="ph"><h3>Equipos</h3><small>disponibilidad · 7 días</small><a class="r btn ghost sm" href="#equipos">Ver equipos</a></div><div id="cEq"></div></div>
           </div>
           <div class="g2">
@@ -752,8 +752,13 @@ function effClass(e){return e>=90?'ok':e>=85?'warn':'bad'}
 function effWord(e){return e>=95?'Bueno':e>=90?'Aceptable':e>=85?'Revisar':'Problema'}
 
 /* ================= equipos ================= */
-function downHours(eqId,from,to){var h=0;arr('paradas').forEach(function(p){if(p.equipo!==eqId)return;var a=Math.max(new Date(p.inicio).getTime(),from),b=Math.min(p.fin?new Date(p.fin).getTime():Date.now(),to);if(b>a)h+=(b-a)/3600000});return h}
-function availability(eqId){var to=Date.now(),from=to-7*86400000;return Math.max(0,1-downHours(eqId,from,to)/168)}
+/* Indicadores de equipos (7 días, 168 h): las horas de mantenimiento (fallas y mantenimiento programado) bajan la
+   disponibilidad física; las esperas operativas (falta de operador, equipo en espera) bajan la utilización. */
+var CAUSA_OPER=['Falta de operador','En espera'];function esOper(p){return p.tipo==='espera'||CAUSA_OPER.indexOf(p.causa)>=0}
+function eqKpi(eqId){var to=Date.now(),from=to-7*864e5,HT=168,HM=0,HE=0,nF=0;arr('paradas').forEach(function(p){if(p.equipo!==eqId)return;var a=Math.max(new Date(p.inicio).getTime(),from),b=Math.min(p.fin?new Date(p.fin).getTime():to,to);if(b<=a)return;var hh=(b-a)/36e5;if(esOper(p))HE+=hh;else{HM+=hh;nF++}});
+  HM=Math.min(HT,HM);HE=Math.min(HT-HM,HE);var HD=HT-HM,HO=HD-HE;return {HT:HT,HM:HM,HE:HE,HO:HO,nF:nF,DF:HD/HT,UT:HD>0?HO/HD:0,MTTR:nF?HM/nF:null,MTBF:nF?HO/nF:null}}
+function downHours(eqId,from,to){var h=0;arr('paradas').forEach(function(p){if(p.equipo!==eqId||esOper(p))return;var a=Math.max(new Date(p.inicio).getTime(),from),b=Math.min(p.fin?new Date(p.fin).getTime():Date.now(),to);if(b>a)h+=(b-a)/3600000});return h}
+function availability(eqId){return eqKpi(eqId).DF}
 var EST={op:['Operativo','ok'],rep:['Parado','bad'],std:['En espera','n']};
 
 /* ================= datos de ejemplo ================= */
@@ -878,7 +883,8 @@ function renderControl(){
   if(!al.length)al.push(['ok','Todo en orden: sin desvíos abiertos, equipos parados ni tareas bloqueadas.']);
   $('#cAlerts').innerHTML=al.slice(0,6).map(function(a){return '<li class="'+a[0]+'"><span>'+a[1]+'</span></li>'}).join('')+(al.length>6?'<li><span class="mute">y '+(al.length-6)+' más</span></li>':'');
   /* pareto */
-  var since=addDays(n.fecha,-6),agg={},tot=0;arr('controles').forEach(function(c){if(c.fecha>=since&&c.causa&&num(c.min)>0){agg[c.causa]=(agg[c.causa]||0)+num(c.min);tot+=num(c.min)}});
+  var since=addDays(n.fecha,-6),agg={},tot=0,porFr=ui.parBy==='fr';arr('controles').forEach(function(c){if(c.fecha>=since&&c.causa&&num(c.min)>0){var kk=porFr?(c.frente?frName(c.frente):'Sin frente'):c.causa;agg[kk]=(agg[kk]||0)+num(c.min);tot+=num(c.min)}});
+  var seg=document.getElementById('parSeg');if(seg)seg.innerHTML='<button type="button" data-act="parBy" data-v="causa" class="'+(porFr?'':'on')+'">Por causa</button><button type="button" data-act="parBy" data-v="fr" class="'+(porFr?'on':'')+'">Por frente</button>';
   var ks=Object.keys(agg).sort(function(a,b){return agg[b]-agg[a]}),mx=ks.length?agg[ks[0]]:1,cum=0;
   $('#cPareto').innerHTML=ks.length?'<div class="hbars">'+ks.slice(0,7).map(function(k2){cum+=agg[k2];return '<div class="hb"><span class="t">'+esc(k2)+'</span><span class="v">'+f1(agg[k2]/60)+' h · '+f0(cum/tot*100)+' % acum.</span><div class="track"><i style="width:'+(agg[k2]/mx*100).toFixed(1)+'%"></i></div></div>'}).join('')+'</div><p class="note" style="margin:12px 0 0">'+f1(tot/60)+' horas perdidas en 7 días. Ataca primero la causa de arriba.</p>':'<div class="empty">Sin demoras registradas en 7 días. Se anotan en cada control del turno.</div>';
   /* equipos */
@@ -1066,6 +1072,7 @@ function ctrlForm(c,r,cs,isNow,n){
    '<label class="f">Avance acumulado (m)<input type="number" id="cAv" step="0.01" min="0" value="'+(Math.round(r.av*100)/100)+'"></label>'+
    '<label class="f">Extracción acumulada (t)<input type="number" id="cT" step="1" min="0" value="'+(last?num(last.t):'')+'"></label>'+
    '<label class="f">Disparos<input type="number" id="cDis" step="1" min="0" value="'+r.dis+'"></label>'+
+   '<label class="f">Frente de la demora<select id="cFrD">'+frOpts((shotsOf(c.f,c.i).slice(-1)[0]||{}).frente||'','Sin frente')+'</select></label>'+
    '<label class="f">Causa de demora<select id="cCausa"><option value="">Sin demora</option>'+CAUSAS.map(function(x){return '<option>'+x+'</option>'}).join('')+'</select></label>'+
    '<label class="f">Minutos perdidos<input type="number" id="cMin" step="5" min="0" placeholder="0"></label>'+
    '<label class="f full">Nota<input id="cNota" placeholder="Qué pasó y dónde"></label></div>'+
@@ -1084,7 +1091,7 @@ function resumen(f,i){
   if(t.cierre)L.push('Novedades: '+t.cierre);
   return L.join('\n');
 }
-function mkAction(f,i,ctrl){var id=uid(),sh=shotsOf(f,i),fr=sh.length?sh[sh.length-1].frente:null;
+function mkAction(f,i,ctrl){var id=uid(),sh=shotsOf(f,i),fr=ctrl.frente||(sh.length?sh[sh.length-1].frente:null);
   put('tareas',{id:id,titulo:'Resolver: '+ctrl.causa+(ctrl.nota?' ('+ctrl.nota+')':''),frente:fr,tipo:'Acción',col:'hacer',resp:'',fecha:f,prio:'P1',bloq:'',origen:'Desvío del control de las '+ctrl.h+' h · '+sLabel(i)+' '+fDate(f)});return id}
 var planT;function savePlan(){clearTimeout(planT);planT=setTimeout(function(){var c=curT(),t=Object.assign({},tGet(c.f,c.i));t.plan={av:num($('#pAv').value),t:num($('#pT').value),dis:num($('#pDis').value)};put('turnos',t)},600)}
 var cierreT;function saveCierre(){clearTimeout(cierreT);cierreT=setTimeout(function(){var c=curT(),t=Object.assign({},tGet(c.f,c.i));t.cierre=$('#tCierre').value;put('turnos',t)},800)}
@@ -1467,12 +1474,13 @@ function renderEq(full){
   var ma=av.length?avg(av):null;
   $('#eKpis').innerHTML='<div class="kpi '+(rep?'bad':'ok')+'"><div class="l">Operativos</div><div class="v">'+op+'<small>de '+eqs.length+'</small></div><div class="s">'+rep+' parado'+(rep===1?'':'s')+'</div></div>'+
    '<div class="kpi '+(ma==null?'':ma>=0.9?'ok':ma>=0.75?'warn':'bad')+'"><div class="l">Disponibilidad media</div><div class="v">'+(ma==null?'–':f0(ma*100))+'<small>%</small></div><div class="s">Últimos 7 días</div></div>'+
-   '<div class="kpi"><div class="l">Horas paradas</div><div class="v">'+f1(hrs)+'<small>h</small></div><div class="s">'+pars.length+' parada(s) en 7 días</div></div>';
-  $('#eqTbl').innerHTML='<thead><tr><th>Equipo</th><th>Estado</th><th>Frente</th><th>Disponibilidad 7 d</th><th class="w">Acción</th></tr></thead><tbody>'+(eqs.length?eqs.map(function(e){var es=EST[e.estado]||EST.op,a=availability(e.id),open=arr('paradas').filter(function(p){return p.equipo===e.id&&!p.fin})[0];
+   '<div class="kpi"><div class="l">Horas en mantenimiento</div><div class="v">'+f1(hrs)+'<small>h</small></div><div class="s">'+pars.length+' parada(s) en 7 días</div></div>'+
+    (function(){var ks=eqs.map(function(e){return eqKpi(e.id)}),ut=ks.length?avg(ks.map(function(k){return k.UT})):null;return '<div class="kpi '+(ut==null?'':ut>=0.8?'ok':ut>=0.6?'warn':'bad')+'"><div class="l">Utilización media</div><div class="v">'+(ut==null?'–':f0(ut*100))+'<small>%</small></div><div class="s">horas operando ÷ horas disponibles</div></div>'})();
+  $('#eqTbl').innerHTML='<thead><tr><th>Equipo</th><th>Estado</th><th>Frente</th><th>Disponibilidad 7 d</th><th class="n">Utilización</th><th class="n">MTBF / MTTR</th><th class="w">Acción</th></tr></thead><tbody>'+(eqs.length?eqs.map(function(e){var es=EST[e.estado]||EST.op,K=eqKpi(e.id),a=K.DF,open=arr('paradas').filter(function(p){return p.equipo===e.id&&!p.fin})[0];
     var act;if(ui.parFor===e.id)act='<span class="confirm"><select id="parCausa" style="min-width:170px">'+CAUSAEQ.map(function(x){return '<option>'+x+'</option>'}).join('')+'</select><button class="btn danger sm" data-act="doStop" data-id="'+esc(e.id)+'">Reportar</button><button class="btn ghost sm" data-act="noConfirm">Cancelar</button></span>';
     else if(e.estado==='rep')act='<button class="btn sm" data-act="eqUp" data-id="'+esc(e.id)+'">Volvió a operar</button>';
     else act='<button class="btn ghost sm" data-act="askStop" data-id="'+esc(e.id)+'">Reportar parada</button>'+(e.estado==='op'?' <button class="btn ghost sm" data-act="eqStd" data-id="'+esc(e.id)+'">En espera</button>':' <button class="btn ghost sm" data-act="eqUp" data-id="'+esc(e.id)+'">Operativo</button>');
-    return '<tr><td><b>'+esc(e.nombre)+'</b><br><small class="mute">'+esc(e.tipo)+'</small></td><td><span class="pill '+es[1]+'">'+es[0]+'</span>'+(open?'<br><small class="mute">'+esc(open.causa)+' · '+ago(new Date(open.inicio).getTime())+'</small>':'')+'</td><td>'+esc(e.frente?frName(e.frente):'—')+'</td><td style="min-width:150px"><div class="hb"><span class="v">'+f0(a*100)+' %</span><span></span><div class="track"><i class="'+(a>=0.9?'ok':a>=0.75?'warn':'bad')+'" style="width:'+(a*100).toFixed(1)+'%"></i></div></div></td><td class="w">'+act+' <button class="btn ghost sm" data-act="editEq" data-id="'+esc(e.id)+'">Editar</button></td></tr>'}).join(''):'<tr><td colspan="5" class="mute">Agrega tus equipos: perforadoras, compresora, winche, bomba, locomotora…</td></tr>')+'</tbody>';
+    return '<tr><td><b>'+esc(e.nombre)+'</b><br><small class="mute">'+esc(e.tipo)+'</small></td><td><span class="pill '+es[1]+'">'+es[0]+'</span>'+(open?'<br><small class="mute">'+esc(open.causa)+' · '+ago(new Date(open.inicio).getTime())+'</small>':'')+'</td><td>'+esc(e.frente?frName(e.frente):'—')+'</td><td style="min-width:150px"><div class="hb"><span class="v">'+f0(a*100)+' %</span><span></span><div class="track"><i class="'+(a>=0.9?'ok':a>=0.75?'warn':'bad')+'" style="width:'+(a*100).toFixed(1)+'%"></i></div></div><small class="mute">'+f1(K.HM)+' h en mantenimiento</small></td><td class="n">'+f0(K.UT*100)+' %<br><small class="mute">'+f1(K.HE)+' h en espera</small></td><td class="n">'+(K.nF?f0(K.MTBF)+' h / '+f1(K.MTTR)+' h<br><small class="mute">'+K.nF+' parada'+(K.nF>1?'s':'')+'</small>':'<span class="mute">sin fallas</span>')+'</td><td class="w">'+act+' <button class="btn ghost sm" data-act="editEq" data-id="'+esc(e.id)+'">Editar</button></td></tr>'}).join(''):'<tr><td colspan="7" class="mute">Agrega tus equipos: perforadoras, compresora, winche, bomba, locomotora…</td></tr>')+'</tbody>';
   var pl=arr('paradas').sort(function(a,b){return new Date(b.inicio)-new Date(a.inicio)}).slice(0,15);
   $('#parTbl').innerHTML='<thead><tr><th>Equipo</th><th>Causa</th><th>Inicio</th><th class="n">Duración</th></tr></thead><tbody>'+(pl.length?pl.map(function(p){var e=D.equipos[p.equipo],a=new Date(p.inicio),b=p.fin?new Date(p.fin):null,h=((b||new Date())-a)/3600000;
     return '<tr><td>'+esc(e?e.nombre:'Equipo borrado')+'</td><td>'+esc(p.causa)+'</td><td>'+a.toLocaleDateString('es-EC',{day:'numeric',month:'short'})+' '+z(a.getHours())+':'+z(a.getMinutes())+'</td><td class="n">'+f1(h)+' h'+(b?'':' <span class="pill bad">abierta</span>')+'</td></tr>'}).join(''):'<tr><td colspan="4" class="mute">Sin paradas registradas.</td></tr>')+'</tbody>';
@@ -1545,6 +1553,7 @@ document.addEventListener('click',function(e){
   case 'askDelCard':ui.confirm='card';renderCardForm();return;
   case 'delCard':del('tareas',ui.editCard);ui.editCard=null;ui.confirm=null;renderCardForm();toast('Tarea borrada');return;
   case 'progSem':var rp=pmFr(D.frentes[id],nowShift().fecha.slice(0,7));progSemana(rp);return;
+  case 'parBy':ui.parBy=b.dataset.v==='fr'?'fr':'causa';schedule(true);return;
   case 'mv':var x=D.tareas[id];if(!x)return;var ci=COLS.map(function(c){return c[0]}).indexOf(x.col)+(+b.dataset.d);if(ci>=0&&ci<4)moveCard(id,COLS[ci][0]);return;
   case 'copyPlan':var c=curT(),p=prevShift(c.f,c.i),pt=tGet(p.f,p.i),t=Object.assign({},tGet(c.f,c.i));t.plan=Object.assign({},pt.plan);put('turnos',t);toast('Meta copiada del turno anterior');return;
   case 'mkAction':var ct=D.controles[id];if(ct){var tid=mkAction(ct.fecha,ct.i,ct);patch('controles',id,{tareaId:tid});toast('Acción creada en el tablero')}return;
@@ -1564,9 +1573,9 @@ document.addEventListener('click',function(e){
   case 'askDelEq':ui.confirm='eq';eqForm();return;
   case 'delEq':del('equipos',ui.editEq);ui.editEq=null;ui.confirm=null;eqForm();toast('Equipo borrado');return;
   case 'askStop':ui.parFor=id;schedule();return;
-  case 'doStop':var cz=$('#parCausa').value,nw=new Date();put('paradas',{id:uid(),equipo:id,inicio:nw.toISOString(),fin:null,causa:cz,fecha:ymd(nw)});patch('equipos',id,{estado:'rep'});ui.parFor=null;toast('Parada reportada: '+cz);return;
+  case 'doStop':var cz=$('#parCausa').value,nw=new Date();arr('paradas').filter(function(p){return p.equipo===id&&!p.fin}).forEach(function(p){patch('paradas',p.id,{fin:nw.toISOString()})});put('paradas',{id:uid(),equipo:id,inicio:nw.toISOString(),fin:null,causa:cz,fecha:ymd(nw)});patch('equipos',id,{estado:'rep'});ui.parFor=null;toast('Parada reportada: '+cz);return;
   case 'eqUp':arr('paradas').filter(function(p){return p.equipo===id&&!p.fin}).forEach(function(p){patch('paradas',p.id,{fin:new Date().toISOString()})});patch('equipos',id,{estado:'op'});toast('Equipo operativo');return;
-  case 'eqStd':patch('equipos',id,{estado:'std'});return;
+  case 'eqStd':var nw2=new Date();put('paradas',{id:uid(),equipo:id,inicio:nw2.toISOString(),fin:null,causa:'En espera',tipo:'espera',fecha:ymd(nw2)});patch('equipos',id,{estado:'std'});toast('Equipo en espera: el tiempo cuenta como utilización, no como falla');return;
   case 'copyBackup':copy(backupText(),$('#bkTxt'));return;
   case 'restore':restore($('#bkTxt').value);return;
   }
@@ -1579,7 +1588,7 @@ document.addEventListener('submit',function(e){
     put('tareas',o);ui.editCard=null;ui.confirm=null;renderCardForm();toast('Tarea guardada');return}
   if(f.id==='ctrlForm'){var c=curT(),h=+$('#cH').value;
     ctrlsOf(c.f,c.i).filter(function(x){return x.h===h}).forEach(function(x){del('controles',x.id)});
-    var ct={id:uid(),fecha:c.f,i:+c.i,h:h,av:num($('#cAv').value),t:num($('#cT').value),dis:num($('#cDis').value),causa:$('#cCausa').value,min:num($('#cMin').value),nota:$('#cNota').value.trim()};
+    var ct={id:uid(),fecha:c.f,i:+c.i,h:h,av:num($('#cAv').value),t:num($('#cT').value),dis:num($('#cDis').value),causa:$('#cCausa').value,min:num($('#cMin').value),nota:$('#cNota').value.trim(),frente:$('#cFrD')?$('#cFrD').value||null:null};
     var made=false;if(ct.causa&&$('#cMk').checked){ct.tareaId=mkAction(c.f,c.i,ct);made=true}
     put('controles',ct);if(!D.turnos[tk(c.f,c.i)])put('turnos',tGet(c.f,c.i));
     $('#ctrlForm').innerHTML='';schedule();toast('Control de las '+h+' h guardado'+(made?' y acción creada en el tablero':''));return}
