@@ -81,7 +81,9 @@ function generarCorte(d,cx,cy){var c=d.corte,phi=corteAvance(c.dAliv,c.nAliv).ph
   // alivios
   var na=Math.max(0,Math.round(c.nAliv)),sepA=c.dAliv/1000*1.15;
   if(c.tipo==='quemadoH'||c.tipo==='linea'){for(var i=0;i<na;i++)h.push({x:cx+(i-(na-1)/2)*sepA,y:cy,t:'alivio',g:'Alivio'})}
-  else if(c.tipo!=='cuna'){for(var j=0;j<na;j++){var ang=2*PI*j/na+(na===4?PI/4:0);h.push({x:cx+(na>1?sepA/2*Math.cos(ang):0),y:cy+(na>1?sepA/2*Math.sin(ang):0),t:'alivio',g:'Alivio'})}}
+  /* alivios en círculo: el radio se calcula para que los vecinos queden a sepA (1,15·Ø) entre centros; antes con 4 alivios
+     quedaban a 0,81·Ø y se superponían (físicamente imposible) */
+  else if(c.tipo!=='cuna'){var rA=na>2?sepA/(2*Math.sin(PI/na)):sepA/2;for(var j=0;j<na;j++){var ang=2*PI*j/na+(na===4?PI/4:0);h.push({x:cx+(na>1?rA*Math.cos(ang):0),y:cy+(na>1?rA*Math.sin(ang):0),t:'alivio',g:'Alivio'})}}
   if(c.tipo==='cuna'){var V=cunaV(d);V.vs.forEach(function(v,k){for(var p=0;p<V.filas;p++){var yy=cy+(p-(V.filas-1)/2)*V.dy;
       h.push({x:cx-v.x,y:yy,t:'arranque',g:k<1?'Arranque':'Ayudas',sec:k+1,inc:v.ang});h.push({x:cx+v.x,y:yy,t:'arranque',g:k<1?'Arranque':'Ayudas',sec:k+1,inc:v.ang})}});
     return {holes:h,B1:V.vs[0].x,B2:0,secciones:V.vs.length,secs:V.vs.map(function(v,k){return {n:k+1,dist:v.x,B:v.B,W:2*v.x,ang:0,L:v.L}}),cuna:V}}

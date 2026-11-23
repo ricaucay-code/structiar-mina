@@ -116,12 +116,12 @@ td input{min-height:30px;padding:3px 6px;max-width:90px}
 <div class="toast" id="toast" hidden></div>
 <script src="../vendor/supabase-2.118.0.js"></script>
 <script src="config.js?v=20261118c"></script>
-<script src="engine.js?v=20261122a"></script>
+<script src="engine.js?v=20261123e"></script>
 <script src="engine-geo.js?v=20261118c"></script>
 <script src="engine-lh.js?v=20261122b"></script>
 <script src="engine-onda.js?v=20261118c"></script>
 <script src="engine-calib.js?v=20261119a"></script>
-<script src="engine-opt.js?v=20261120a"></script><script src="engine-ciclo.js?v=20261122a"></script><script src="engine-viz.js?v=20261123c"></script>
+<script src="engine-opt.js?v=20261120a"></script><script src="engine-ciclo.js?v=20261122a"></script><script src="engine-viz.js?v=20261123e"></script>
 <script>
 (function(){'use strict';
 var E=window.SVE,C=window.STRUCTIAR_CFG||{},sb=null;try{sb=supabase.createClient(C.url,C.key,{auth:{persistSession:true,autoRefreshToken:true}})}catch(e){}
@@ -256,7 +256,7 @@ function vizDraw(t){if(!(window.SVE&&SVE.VIZ)||LHm())return;cvMontar();var g=R.d
   if(c2){var k2=Math.round((c2.parentNode.clientWidth||0))+'|'+ar2.toFixed(3);if(c2._k!==k2){fitCv(c2,ar2);c2._k=k2}var G2=SVE.VIZ.frente(c2,R,{modo:S.modo,t:t});
     c2.setAttribute('aria-label',t!=null?'Simulación del disparo a los '+Math.round(t)+' ms: salieron '+R.holes.filter(function(h){return h.kg>0&&h.ms!=null&&h.ms<=t}).length+' de '+R.holes.filter(function(h){return h.kg>0}).length+' barrenos.':S.modo==='carga'?'Mapa de carga local: promedio '+f2(G2.prom)+' kg/m³, máximo '+f1(G2.dmax)+' kg/m³ junto al arranque.':'Mapa de fragmentación: tamaño medio X50 entre '+f1(G2.xmin)+' y '+f1(G2.xmax)+' cm; las zonas más gruesas están en el contorno.')}
   if(c3){var k3=Math.round(c3.parentNode.clientWidth||0);if(c3._k!==k3){fitCv(c3,16/10);c3._k=k3}if(!c3._orb){c3._orb=1;SVE.VIZ.orbitar(c3,S.cam,function(){SVE.VIZ.galeria3d(c3,R,{t:S.sim?S.sim.t:null,cam:S.cam,modo:S.modo})})}SVE.VIZ.galeria3d(c3,R,{t:t,cam:S.cam,modo:S.modo})}
-  if(cc){var kc=Math.round(cc.parentNode.clientWidth||0)+'|'+JSON.stringify([D.corte,D.malla.d,R.cx,R.cy,R.corte.B1,R.corte.B2,R.Lmax]);if(cc._k!==kc){fitCv(cc,1);cc._k=kc;SVE.VIZ.cuele(cc,R)}}}
+  if(cc){var kc=Math.round(cc.parentNode.clientWidth||0)+'|'+JSON.stringify([D.corte,D.malla.d,R.cx,R.cy,R.corte.B1,R.corte.B2,R.Lmax]);kc+='|'+(S.cutV||2);if(cc._k!==kc){fitCv(cc,1);cc._k=kc;SVE.VIZ.cuele(cc,R,{secciones:S.cutV||2})}}}
 function vizFrame(t){var el=$('#scheme');if(el&&!el.querySelector('.cvslot')&&S.vista!=='3d'){el.innerHTML=schemeInner(t)}vizDraw(t);var r=$('#simR');if(r)r.value=Math.round(t||0);var st=$('#simT');if(st)st.textContent=f0(t||0)+' ms'}
 function grabarVideo(){var VZ=SVE.VIZ,fin=simFin(),vis=S.vista||'2d',ios=/iP(hone|ad|od)/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),W=ios?960:1280,Hh=vis==='2d'?(ios?680:900):(ios?540:720),cv=document.createElement('canvas');cv.width=W;cv.height=Hh;var ctx=cv.getContext('2d'),a=document.createElement('canvas'),b=document.createElement('canvas');
   if(vis==='2d3d'){a.width=W/2;a.height=Hh-80;b.width=W/2;b.height=Hh-80}else{a.width=W;a.height=Hh-80;b.width=W;b.height=Hh-80}
@@ -416,7 +416,7 @@ function vDiseno(){var g=R.d.geom,est=R.estado==='conforme'?'ok':R.estado==='rev
    '<select id="simV" aria-label="Velocidad">'+[['1','×1'],['0.25','Lento ×4'],['0.1','Lento ×10']].map(function(o){return '<option value="'+o[0]+'"'+(String(S.simV||'0.25')===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select>'+
    (vz&&vz.soportaVideo()?'<button class="btn g sm" type="button" data-a="video">Video</button>':'')+'</div>'+
    '<p class="mute" style="font-size:12.5px;margin:6px 0 0">Cada barreno destella al salir; la zona que rompe pasa a roca quebrada y los fragmentos salen hacia la cara libre. En 2D sin simular, arrastra el círculo amarillo para mover el corte'+(vis!=='2d'?'; en 3D arrastra para girar':'')+'.</p><div class="hinfo" id="hinfo">'+holeInfo()+'</div></div>';
-  if(vz)h+='<div class="panel"><div class="ph"><h3>Detalle del arranque · corte a escala real</h3><small class="mute">'+esc(E.CORTES[D.corte.tipo]||'')+'</small></div><div class="g2" style="align-items:start"><div class="scheme"><div class="cvslot" data-slot="cvCut"></div></div>'+
+  if(vz)h+='<div class="panel"><div class="ph"><h3>Detalle del arranque · corte a escala real</h3><span class="r seg">'+[[2,'Arranque (S1–S2)'],[4,'Corte completo']].map(function(o){return '<button type="button" data-cutv="'+o[0]+'"'+((S.cutV||2)===o[0]?' class="on"':'')+'>'+o[1]+'</button>'}).join('')+'</span></div><p class="mute" style="margin:0 0 8px;font-size:12.5px">'+esc(E.CORTES[D.corte.tipo]||'')+'</p><div class="g2" style="align-items:start"><div class="scheme"><div class="cvslot" data-slot="cvCut"></div></div>'+
     '<dl class="grid2" style="margin:0">'+[['Alivio',(D.corte.nAliv||1)+' × Ø'+(D.corte.dAliv||64)+' mm'],['Ø equivalente',f0(R.phiEq*1000)+' mm'],['B1 · primera sección',f2(R.corte.B1||0)+' m'],['B2 · segunda sección',f2(R.corte.B2||0)+' m'],['Secciones del corte',String(R.corte.secciones||0)],['Avance máximo / diseño',f2(R.Lmax)+' / '+f2(g.L)+' m']].map(function(x){return '<div><dt class="mute" style="font-size:12px">'+x[0]+'</dt><dd style="margin:0;font:600 16px var(--mono,monospace)">'+x[1]+'</dd></div>'}).join('')+'</dl></div></div>';
   h+='<div class="panel"><div class="ph"><h3>Alertas QA/QC</h3><small class="mute">Cada alerta indica qué ajustar</small></div><div class="alerts">'+R.alertas.slice().sort(function(a,b){var o={error:0,aviso:1,ok:2};return o[a.nivel]-o[b.nivel]}).map(function(a){return '<div class="al"><span class="pill '+a.nivel+'">'+(a.nivel==='ok'?'OK':a.nivel==='aviso'?'AVISO':'REVISAR')+'</span><span>'+esc(a.txt)+'</span>'+(a.nivel!=='ok'&&a.acc?'<small>→ '+esc(a.acc)+'</small>':'')+'</div>'}).join('')+'</div></div>';
   h+=estrPanel();
@@ -825,6 +825,7 @@ document.addEventListener('toggle',function(e){var d=e.target;if(d.dataset&&d.da
 document.addEventListener('click',function(e){var tp=e.target.closest('[data-tipo]');if(tp){var want=tp.dataset.tipo;if((want==='larga')===LHm())return;if(S.dirty&&!confirm('Hay cambios sin guardar. ¿Cambiar de tipo de diseño?'))return;D=want==='larga'?E.LH.defaultsLH():E.defaults();S.id=null;S.dirty=false;stopSim();S.sim=null;renderSteps();renderAll();return}
   var b=e.target.closest('[data-t]');if(b&&b.closest('#tabs')){S.tab=b.dataset.t;renderAll();return}
   var m=e.target.closest('[data-m]');if(m){S.modo=m.dataset.m;(LHm()?vDisenoLH:vDiseno)();return}
+  var cvb=e.target.closest('[data-cutv]');if(cvb){S.cutV=+cvb.dataset.cutv;vDiseno();return}
   var vb=e.target.closest('[data-vista]');if(vb){S.vista=vb.dataset.vista;vDiseno();return}
   var a=e.target.closest('[data-a]');if(!a)return;var act=a.dataset.a,id=a.dataset.id;
   if(act==='addFam'){D.estructuras=D.estructuras||[];var n=D.estructuras.length;D.estructuras.push({nombre:'J'+(n+1),dip:70,dd:(n*120+(LHm()?D.rumbo||0:D.geom.rumbo||0)+90)%360,esp:0.5});renderSteps();changed(true);return}
