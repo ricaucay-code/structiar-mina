@@ -980,6 +980,7 @@ function renderPlan(full){
    Meta de metros por frente (se guarda en el frente: metas['AAAA-MM']), avance real desde los disparos y
    cierre de mes esperado con Monte Carlo del ciclo con turnos (Vargas et al., TUST 2014; validado 1 %). */
 var PM_OPS=[['Perforación',195,38],['Carguío y voladura',56,12],['Ventilación',90,0],['Desatado',26,7],['Limpieza',70,20],['Sostenimiento',0,0]],pmCache={};
+function pmLimpiar(){if(Object.keys(pmCache).length>150)pmCache={}}
 function pmMes(){return ui.pmMes||nowShift().fecha.slice(0,7)}
 function pmDias(mes){var y=+mes.slice(0,4),m=+mes.slice(5,7);return new Date(y,m,0).getDate()}
 function pmFr(fr,mes){var c=cfg(),td=Math.max(1,Math.round(24/c.turnoHoras)),meta=num((fr.metas||{})[mes]),sh=arr('disparos').filter(function(d){return d.frente===fr.id}),
@@ -1091,7 +1092,7 @@ function renderGer(){var hoy=nowShift().fecha,mes=hoy.slice(0,7),P=pro();
     return '<div><div style="display:flex;justify-content:space-between;gap:8px;font-size:13px"><b style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(r.fr.nombre)+'</b><span class="pill '+r.estado+'">'+lbl[r.estado]+'</span></div>'+
      '<div style="position:relative;height:12px;border-radius:6px;background:var(--line);margin-top:5px"><div style="position:absolute;inset:0 auto 0 0;width:'+pf+'%;border-radius:6px;background:var(--'+r.estado+');opacity:.25"></div><div style="position:absolute;inset:0 auto 0 0;width:'+pc+'%;border-radius:6px;background:var(--'+r.estado+')"></div><div title="esperado a hoy" style="position:absolute;top:-3px;bottom:-3px;left:calc('+pe+'% - 1px);width:2px;background:var(--ink)"></div></div>'+
      '<div class="mute" style="font-size:12px;margin-top:3px">'+f1(r.real)+' de '+f0(r.meta)+' m · cierre '+f0(r.fc.p50)+' m</div></div>'}).join('')+'</div>':'<p class="empty">Pon la meta del mes de cada frente en Plan.</p>'}
-function renderPlanMes(force){var box=$('#planMes');if(!box)return;var mes=pmMes(),frs=arr('frentes').filter(function(f){return f.activo!==false}).sort(function(a,b){return a.nombre.localeCompare(b.nombre)});
+function renderPlanMes(force){var box=$('#planMes');if(!box)return;pmLimpiar();var mes=pmMes(),frs=arr('frentes').filter(function(f){return f.activo!==false}).sort(function(a,b){return a.nombre.localeCompare(b.nombre)});
   if(!force&&box.contains(document.activeElement)&&document.activeElement.tagName==='INPUT')return;
   var R=frs.map(function(f){return pmFr(f,mes)}),con=R.filter(function(r){return r.meta>0}),tM=con.reduce(function(a,r){return a+r.meta},0),tR=con.reduce(function(a,r){return a+r.real},0),tP=con.reduce(function(a,r){return a+r.fc.p50},0);
   var lbl={ok:'Llega',warn:'En riesgo',bad:'No llega',n:'Sin meta'};

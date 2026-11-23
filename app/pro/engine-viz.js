@@ -145,7 +145,7 @@ function cuele(cv,R){var ctx=cv.getContext('2d'),W=cv.width,H=cv.height,C=R.cort
 function soportaVideo(){return typeof MediaRecorder!=='undefined'&&!!HTMLCanvasElement.prototype.captureStream}
 function grabar(cv,dibujar,fin,op){op=op||{};var lento=op.lento||10,fps=op.fps||30;return new Promise(function(res,rej){if(!soportaVideo()){rej(new Error('Este navegador no permite grabar video'));return}
   var tipos=['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm'],mime=tipos.filter(function(m){return MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(m)})[0]||'';
-  var st=cv.captureStream(fps),rec=new MediaRecorder(st,mime?{mimeType:mime,videoBitsPerSecond:6e6}:{videoBitsPerSecond:6e6}),ch=[];rec.ondataavailable=function(e){if(e.data&&e.data.size)ch.push(e.data)};
+  var st=cv.captureStream(fps),rec=new MediaRecorder(st,mime?{mimeType:mime,videoBitsPerSecond:op.bps||6e6}:{videoBitsPerSecond:op.bps||6e6}),ch=[];rec.ondataavailable=function(e){if(e.data&&e.data.size)ch.push(e.data)};
   rec.onstop=function(){res({blob:new Blob(ch,{type:mime||'video/webm'}),ext:/mp4/.test(mime)?'mp4':'webm'})};rec.onerror=function(e){rej(e.error||e)};
   var dur=fin*lento+1500,t0=null;rec.start(200);(function step(now){if(t0==null)t0=now;var el=now-t0,t=Math.min(fin,Math.max(0,(el-400)/lento));dibujar(t,el/dur);if(op.progreso)op.progreso(Math.min(1,el/dur));
     if(el<dur)requestAnimationFrame(step);else rec.stop()})(performance.now())})}
