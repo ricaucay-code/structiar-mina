@@ -56,7 +56,7 @@ function frente(cv,R,o){o=o||{};var g=R.d.geom,ctx=cv.getContext('2d'),W=cv.widt
     if(modo==='carga')c=ramp(R_CARGA,G.den[k]/(G.dmax||1));
     else if(modo==='frag'&&ow>=0)c=ramp(R_FRAG,(G.x50[ow]-G.xmin)/((G.xmax-G.xmin)||1));
     else if(modo==='periodo'&&ow>=0&&R.holes[ow].p)c=PCOL[(R.holes[ow].p-1)%PCOL.length];
-    if(t!=null&&ow>=0&&fired(ow)){var age=t-R.holes[ow].ms,hsh=((k*2654435761)>>>0)%97/97;c=age<45?'#c9783a':'rgb('+Math.round(30+hsh*30)+','+Math.round(24+hsh*22)+','+Math.round(20+hsh*16)+')'}
+    if(t!=null&&ow>=0&&fired(ow)){var age=t-R.holes[ow].ms,ii=k%G.nx,jj=Math.floor(k/G.nx),hv=Math.sin(ii*12.9898+jj*78.233)*43758.5453,hsh=hv-Math.floor(hv);c=age<45?'#c9783a':'rgb('+Math.round(30+hsh*30)+','+Math.round(24+hsh*22)+','+Math.round(20+hsh*16)+')'}
     if(c){ctx.globalAlpha=modo==='periodo'&&!(t!=null&&ow>=0&&fired(ow))?0.35:1;ctx.fillStyle=c;ctx.fillRect(px,py,cs,cs);ctx.globalAlpha=1}}
   /* polvo y fragmentos */
   if(t!=null)R.holes.forEach(function(h,i){if(h.ms==null||h.kg<=0||h.ms>t)return;var age=t-h.ms;
