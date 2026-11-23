@@ -102,6 +102,7 @@ section.view[hidden]{display:none!important}
 .kpi .s{font-size:12.5px;color:var(--mute)}
 .kpi svg.spark{width:100%;height:30px;display:block;margin-top:4px}
 .spark .a{fill:var(--accent-soft)}.spark .l2{fill:none;stroke:var(--accent);stroke-width:1.6}.spark .d{fill:var(--accent)}
+.segl{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:6px 16px}.segi{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.35;padding:7px 4px;border-bottom:1px solid var(--line);cursor:pointer}.segi input{width:20px;min-height:20px;height:20px;flex:none;margin-top:0;accent-color:var(--ok)}.segi input:checked+span{color:var(--mute)}
 .pill{display:inline-flex;align-items:center;gap:5px;padding:1px 9px;border-radius:999px;font:600 12px var(--f-body);white-space:nowrap}
 .pill.ok{background:var(--ok-bg);color:var(--ok)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.bad{background:var(--bad-bg);color:var(--bad)}.pill.n{background:var(--surface2);color:var(--mute);border:1px solid var(--line)}
 .btn{font:600 14px var(--f-body);background:var(--accent);color:var(--on-accent);border:1px solid var(--accent);border-radius:6px;padding:8px 14px;cursor:pointer;min-height:40px;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;white-space:nowrap}
@@ -343,6 +344,7 @@ details.calc pre{white-space:pre-wrap;font:12px/1.65 var(--f-mono);background:va
           </div>
           <div class="row w" style="margin-top:10px"><button class="btn ghost sm" data-act="copyPlan">Copiar meta del turno anterior</button><span class="note">La meta se guarda al escribirla y la ve todo el equipo.</span></div></div>
           <div class="kpis" id="tKpis"></div>
+          <div class="panel" id="tSeg"></div>
           <div class="g2">
             <div class="panel chart"><div class="ph"><h3>Plan contra real</h3></div><div id="tChart"></div></div>
             <div class="panel"><div class="ph"><h3>Controles</h3></div><div class="tbl"><table id="tCtrl"></table></div>
@@ -1144,6 +1146,7 @@ function renderTurno(full){
   function k(lbl,real,plan,unit,dec){var exp=plan*frac,cls=plan>0&&frac>0?ratioClass(exp>0?real/exp:1):'';return '<div class="kpi '+cls+'"><div class="l">'+lbl+'</div><div class="v">'+(dec?f1(real):f0(real))+'<small>'+unit+(plan>0?' / '+(dec?f1(plan):f0(plan)):'')+'</small></div><div class="s">'+(plan>0?f0(real/plan*100)+' % de la meta'+(isNow?' · esperado ahora '+(dec?f1(exp):f0(exp)):''):'Sin meta')+'</div></div>'}
   var lost=0;r.ctrls.forEach(function(x){lost+=num(x.min)});
   $('#tKpis').innerHTML=k('Avance',r.av,num(t.plan.av),'m',1)+k('Extracción',r.t,num(t.plan.t),'t',0)+k('Disparos',r.dis,num(t.plan.dis),'',0)+'<div class="kpi '+(lost>60?'bad':lost>0?'warn':'ok')+'"><div class="l">Tiempo perdido</div><div class="v">'+f1(lost/60)+'<small>h</small></div><div class="s">'+r.ctrls.filter(function(x){return x.causa}).length+' desvío(s) registrados</div></div>';
+  segRender(c,t);
   curve('#tChart',t,r.ctrls,isNow?n.horas:null);
   var cs=r.ctrls;
   $('#tCtrl').innerHTML='<thead><tr><th>Hora</th><th class="n">Avance</th><th class="n">Extr.</th><th>Estado</th><th>Demora y acción</th><th class="w"></th></tr></thead><tbody>'+(cs.length?cs.map(function(x){
@@ -1172,10 +1175,27 @@ function ctrlForm(c,r,cs,isNow,n){
    '<label class="row" style="margin-top:10px;font-size:14px;gap:8px"><input type="checkbox" id="cMk" checked style="width:18px;min-height:18px"> Si hay causa, crear la acción en el tablero</label>'+
    '<p class="note" style="margin:6px 0 10px">Avance y disparos vienen de las voladuras registradas en este turno.</p><button class="btn" type="submit">Guardar control</button>';
 }
+/* ---------- inicio de turno: verificación de seguridad (se guarda dentro del turno, campo opcional seg) ---------- */
+var SEG=[['gas','Gases y ventilación medidos en los frentes (O₂, CO, NO₂)'],['desat','Desatado de rocas: techo y hastiales revisados antes de entrar'],['sost','Sostenimiento revisado (pernos, malla, cuadros)'],['tiros','Frentes revisados por tiros fallados del turno anterior'],['epp','Personal con EPP completo y lámpara cargada'],['eq','Inspección de pre-uso de equipos hecha'],['exp','Explosivos y accesorios separados; polvorín cerrado con llave'],['ruta','Rutas de escape, refugio y extintores libres'],['com','Comunicación con superficie probada']];
+var segLoc={};function segCur(t){var a=t&&t.seg,l=t&&segLoc[t.id];return l&&(!a||(+a.ts||0)<=l.ts)?l:a}
+function segEstado(t){t=t?Object.assign({},t,{seg:segCur(t)}):t;var o=(t&&t.seg&&t.seg.ok)||{},n=SEG.filter(function(x){return o[x[0]]===true}).length;return {n:n,N:SEG.length,falta:SEG.filter(function(x){return o[x[0]]!==true}),obs:(t&&t.seg&&t.seg.obs)||'',por:(t&&t.seg&&t.seg.por)||'',ts:(t&&t.seg&&t.seg.ts)||null}}
+function segRender(c,t){var el=$('#tSeg');if(!el)return;var e=segEstado(t),sc=segCur(t),o=(sc&&sc.ok)||{},cls=e.n===e.N?'ok':e.n===0?'bad':'warn';
+  var ae=document.activeElement&&document.activeElement.id==='segObs';
+  var head='<div class="ph"><h3>Inicio de turno · seguridad</h3><span class="r pill '+cls+'">'+(e.n===e.N?'Completo ':'')+e.n+' de '+e.N+'</span></div>';
+  var lista='<div class="segl">'+SEG.map(function(x){return '<label class="segi"><input type="checkbox" data-seg="'+x[0]+'"'+(o[x[0]]===true?' checked':'')+(canWrite?'':' disabled')+'><span>'+x[1]+'</span></label>'}).join('')+'</div>';
+  var pie='<label class="f" style="margin-top:10px">Condición insegura u observación<input id="segObs" maxlength="300" placeholder="Ej.: Techo suelto en Galería 2, se señalizó y se desató"'+(canWrite?'':' disabled')+'></label>'+
+    '<p class="note" style="margin:6px 0 0">'+(e.por?'Verificado por '+esc(e.por)+(e.ts?' · '+new Date(e.ts).toLocaleTimeString('es-EC',{hour:'2-digit',minute:'2-digit'}):'')+' · ':'')+(e.n<e.N?'No se ingresa a un frente con un punto pendiente sin corregirlo o señalizarlo.':'Todo verificado: buen turno.')+'</p>';
+  var hh=head+lista+pie;if(el._k!==hh){el._k=hh;el.innerHTML=hh}var ob=$('#segObs');if(ob&&!ae&&ob.value!==e.obs)ob.value=e.obs}
+function segGuardar(campo,val){var c=curT(),t=Object.assign({},tGet(c.f,c.i)),sg=Object.assign({ok:{}},segCur(t)||{});sg.ok=Object.assign({},sg.ok);
+  if(campo==='obs')sg.obs=String(val||'').slice(0,300);else sg.ok[campo]=!!val;
+  sg.por=(typeof meProf!=='undefined'&&meProf&&meProf.name)||sg.por||'';sg.ts=Date.now();segLoc[t.id]=sg;t.seg=sg;put('turnos',t)}
+document.addEventListener('change',function(e){var el=e.target;if(!el||!el.dataset||!el.dataset.seg||!canWrite)return;segGuardar(el.dataset.seg,el.checked);var c=curT();segRender(c,tGet(c.f,c.i))});
+var segT;document.addEventListener('input',function(e){if(!e.target||e.target.id!=='segObs'||!canWrite)return;var v=e.target.value;clearTimeout(segT);segT=setTimeout(function(){segGuardar('obs',v)},800)});
 function resumen(f,i){
   var t=tGet(f,i),r=realOf(f,i),L=[];
   L.push('*'+cfg().nombre+'*');L.push(sLabel(i)+' · '+fDate(f)+' ('+sHours(i)+')');
   function ln(nm,re,pl,u,d){return nm+': '+(d?f1(re):f0(re))+(pl?' de '+(d?f1(pl):f0(pl)):'')+' '+u+(pl?' ('+f0(re/pl*100)+' %)':'')}
+  var sgE=segEstado(t);L.push('Seguridad al inicio: '+sgE.n+' de '+sgE.N+(sgE.n<sgE.N&&sgE.falta.length<=3?' (pendiente: '+sgE.falta.map(function(x){return x[1].split(/[:(]/)[0].trim().toLowerCase()}).join(', ')+')':'')+(sgE.obs?' · '+sgE.obs:''));
   L.push(ln('Avance',r.av,num(t.plan.av),'m',1));L.push(ln('Extracción',r.t,num(t.plan.t),'t',0));L.push(ln('Disparos',r.dis,num(t.plan.dis),'',0));
   if(r.shots.length){L.push('Voladuras:');r.shots.forEach(function(d){var c=calc(d);L.push('· '+frName(d.frente)+': '+f2(num(d.avance))+' m, '+f0(c.eff)+' % ('+effWord(c.eff).toLowerCase()+')')})}
   var ds=r.ctrls.filter(function(c){return c.causa});if(ds.length){L.push('Demoras:');ds.forEach(function(c){L.push('· '+c.h+' h: '+c.causa+(num(c.min)?' ('+f0(num(c.min))+' min)':'')+(c.nota?' · '+c.nota:''))})}
@@ -1509,6 +1529,7 @@ async function pdfTurno(){var c=curT(),t=tGet(c.f,c.i),r=realOf(c.f,c.i);toast('
   function ln(x,b){var parts=doc.splitTextToSize(pdfTxt(x),W-2*M);parts.forEach(function(q){if(y>280){doc.addPage();y=20}doc.setFont('helvetica',b?'bold':'normal');doc.text(q,M,y);y+=5.2})}
   function row(cols,ws,b){if(y>280){doc.addPage();y=20}var x=M;doc.setFont('helvetica',b?'bold':'normal');doc.setFontSize(9.5);cols.forEach(function(q,i){doc.text(pdfTxt(String(q)).slice(0,Math.floor(ws[i]/1.7)),x,y);x+=ws[i]});y+=5.4;if(b){doc.setDrawColor(200,210,215);doc.setLineWidth(0.2);doc.line(M,y-3.6,W-M,y-3.6)}}
   doc.setFont('helvetica','bold');doc.setFontSize(16);doc.text(pdfTxt(sLabel(c.i)+' · '+fDate(c.f)),M,y);y+=6;doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(90,110,120);doc.text(pdfTxt(sHours(c.i)+(meProf&&meProf.name?' · Elaborado por '+meProf.name:'')),M,y);doc.setTextColor(12,30,42);y+=10;
+  var sgP=segEstado(t);h2('Inicio de turno: seguridad ('+sgP.n+' de '+sgP.N+')');var sgo=(segCur(t)&&segCur(t).ok)||{};SEG.forEach(function(x){ln((sgo[x[0]]===true?'[x] ':'[  ] ')+x[1])});if(sgP.obs)ln('Observación: '+sgP.obs,1);if(sgP.por)ln('Verificado por '+sgP.por);y+=4;
   h2('Plan contra real');var ws=[58,34,34,34];row(['Indicador','Meta','Real','Cumplimiento'],ws,1);
   [['Avance (m)',num(t.plan.av),r.av,1],['Extracción (t)',num(t.plan.t),r.t,0],['Disparos',num(t.plan.dis),r.dis,0]].forEach(function(k){row([k[0],k[3]?f1(k[1]):f0(k[1]),k[3]?f1(k[2]):f0(k[2]),k[1]?f0(k[2]/k[1]*100)+' %':'-'],ws)});y+=4;
   h2('Voladuras del turno');if(r.shots.length){var w2=[52,22,22,22,24,22,14];row(['Frente','Perf. m','Avance m','Efic. %','Explos. kg','FC kg/m3','Tal.'],w2,1);r.shots.forEach(function(d){var k=calc(d);row([frName(d.frente),f2(num(d.perf)),f2(num(d.avance)),f0(k.eff),f1(num(d.kg)),f2(k.fc),f0(num(d.tal))],w2)})}else ln('Sin disparos registrados en el turno.');y+=4;
