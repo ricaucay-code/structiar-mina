@@ -500,9 +500,10 @@ function renderSetup(){
    '<form data-f="unir"><label class="f">Código que te dio tu jefe<input id="aCode" required maxlength="12" placeholder="ABCD-1234" style="text-transform:uppercase"></label><button class="btn ghost" type="submit">Unirme a la mina</button></form>'+
    '<p class="fine"><button class="lnk" type="button" data-a="logout">Salir ('+esc(email)+')</button></p>')}
 async function loadMina(){
-  var r=await sb.from('miembros').select('rol,nombre,mina_id,minas(*)').eq('user_id',uid).limit(1);
+  var r=await sb.from('miembros').select('rol,nombre,mina_id,minas(id,nombre,owner,creado,trial_fin,pro_fin,plan,plan_fin)').eq('user_id',uid).limit(1);
   if(r.error)throw r.error;var m=r.data&&r.data[0];if(!m){mina=null;rol=null;return false}
-  mina=m.minas;rol=m.rol;window.__mina=mina;window.__rol=rol;await loadMembers();return true}
+  mina=m.minas;rol=m.rol;if(rol==='admin'){try{var cq=await sb.rpc('ver_codigo',{p_mina:mina.id});if(!cq.error&&cq.data)mina.codigo=cq.data}catch(e){}}
+  window.__mina=mina;window.__rol=rol;await loadMembers();return true}
 async function loadMembers(){var r=await sb.from('miembros').select('user_id,rol,nombre,email,unido').eq('mina_id',mina.id).order('unido');members=r.data||[]}
 async function afterAuth(){
   var ok=false;try{ok=await loadMina();if(ok)cset('sm-ctx-'+uid,{mina:mina,rol:rol,members:members})}catch(e){var c=isNet(e)?cget('sm-ctx-'+uid):null;
@@ -517,7 +518,7 @@ function startCtx(){if(started)return;started=true;
     me:async function(){return {id:uid,name:meName,avatarUrl:BLANK}},
     profiles:async function(ids){var o={};(Array.isArray(ids)?ids:[ids]).forEach(function(i){var m=members.filter(function(x){return x.user_id===i})[0];o[i]={id:i,name:m?(m.nombre||(m.email||'').split('@')[0]):'',avatarUrl:BLANK,isMe:i===uid}});return o}};
   resolveCtx({db:mkDb(mina.id),user:user});
-  sb.channel('lic-'+mina.id).on('postgres_changes',{event:'UPDATE',schema:'public',table:'minas',filter:'id=eq.'+mina.id},function(p){if(p.new&&p.new.id){mina=Object.assign({},mina,p.new);window.__mina=mina;window.dispatchEvent(new Event('structiar-lic'))}}).subscribe();
+  sb.channel('lic-'+mina.id).on('postgres_changes',{event:'UPDATE',schema:'public',table:'minas',filter:'id=eq.'+mina.id},function(p){if(p.new&&p.new.id){var nw=Object.assign({},p.new);delete nw.codigo;delete nw.nota;mina=Object.assign({},mina,nw);window.__mina=mina;window.dispatchEvent(new Event('structiar-lic'))}}).subscribe();
   setInterval(function(){window.dispatchEvent(new Event('structiar-lic'))},60000);
   addFootLogout()}
 function addFootLogout(){var f=document.querySelector('aside.side .foot');if(f&&!f.querySelector('[data-a=logout]')){var b=document.createElement('button');b.type='button';b.className='fbk';b.dataset.a='logout';b.textContent='Salir';f.appendChild(b)}}

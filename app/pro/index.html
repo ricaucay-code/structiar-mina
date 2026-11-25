@@ -967,7 +967,7 @@ function modoDemo(){S.demo=true;
 async function boot(){if(!sb){gate('<h2>No se pudo cargar</h2><p class="mute">Revisa tu conexión y recarga la página.</p>');return}
   var s=(await sb.auth.getSession()).data.session;
   if(!s){modoDemo();return}
-  S.uid=s.user.id;var r=await sb.from('miembros').select('rol,mina_id,minas(*)').eq('user_id',S.uid).limit(1);
+  S.uid=s.user.id;var r=await sb.from('miembros').select('rol,mina_id,minas(id,nombre,owner,plan,plan_fin,trial_fin,pro_fin)').eq('user_id',S.uid).limit(1);
   var mm=r.data&&r.data[0];if(!mm){gate('<h2>Sin mina</h2><p class="mute">Crea tu mina o únete con un código en la app.</p><a class="btn" href="../">Ir a la app</a>');return}
   S.mina=mm.minas;S.rol=mm.rol;try{var p=await sb.rpc('pro_activo',{m:S.mina.id});S.pro=!!p.data}catch(e){S.pro=false}
   $('#app').hidden=false;$('#gate').hidden=true;renderSteps();renderAll();setTimeout(bootOk,3000);
