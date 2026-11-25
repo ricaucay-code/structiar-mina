@@ -679,9 +679,13 @@ function norm(c,o,id){if(!o||typeof o!=='object'||!IDRE.test(String(id)))return 
   (NUMF[c]||[]).forEach(function(k){if(o[k]!=null)o[k]=num(o[k])});
   if(c==='turnos'){var p=o.plan&&typeof o.plan==='object'?o.plan:{};o.plan=Object.assign({},p,{av:num(p.av),t:num(p.t),dis:num(p.dis)})}
   if(c==='tareas'&&!COLS.some(function(x){return x[0]===o.col}))o.col='hacer';
-  if(c==='frentes'){if(o.roca!=null&&!CLS.test(o.roca))delete o.roca;fixDis(o,'diseno')}
+  if(c==='frentes'){if(o.roca!=null&&!CLS.test(o.roca))delete o.roca;fixDis(o,'diseno');fixSeq(o);fixGeo(o)}
   if(c==='disparos'&&o.qa!=null){if(typeof o.qa!=='object')delete o.qa;else fixDis(o.qa,'dis')}
   return o}
+/* datos anidados de otros miembros: solo números o valores de una lista cerrada (evita inyección de HTML) */
+function nn(v){return v==null||v===''?null:num(v)}
+function fixSeq(o){var q=o.seq;if(q==null)return;if(typeof q!=='object'||Array.isArray(q)){delete o.seq;return}var r={};Object.keys(q).forEach(function(k){var v=q[k];if(k==='antes')r.antes=v==null||v===''?null:(IDRE.test(String(v))?String(v):null);else if(k==='relleno')r.relleno=v==='no'?'no':'si';else if(/^[A-Za-z]{1,20}$/.test(k))r[k]=nn(v)});o.seq=r}
+function fixGeo(o){var g=o.geo;if(g==null)return;if(typeof g!=='object'||Array.isArray(g)){delete o.geo;return}var gi=g.in;if(gi!=null){if(typeof gi!=='object'||Array.isArray(gi))delete g.in;else{var r={};Object.keys(gi).forEach(function(k){var v=gi[k];if(k==='perm')r.perm=v==='temp'?'temp':v==='perm'?'perm':null;else if(/^[A-Za-z]{1,20}$/.test(k))r[k]=nn(v)});g.in=r}}}
 function fixDis(h,k){var d=h[k];if(d==null)return;if(typeof d!=='object'){delete h[k];return}
   ['N','carg','L','A','kg','fc','S','barra'].forEach(function(f){if(d[f]!=null)d[f]=num(d[f])});if(d.cls!=null&&!CLS.test(d.cls))d.cls='III'}
 function L6(a){return (Array.isArray(a)?a:[]).slice(0,6).map(function(x){return String(x).slice(0,200)})}
@@ -1029,7 +1033,7 @@ function renderSeq(force){var box=$('#seqTajos');if(!box||!window.SVE||!SVE.SEQ)
   h+='<div class="fields">'+ci('ton','Capacidad de extracción','t por mes')+ci('perf','Perforación disponible','m por mes')+ci('relleno','Relleno disponible','m³ por mes')+
     '<label class="f">Horizonte<select data-seqc="meses"'+(disA?' disabled':'')+'>'+opts([['3','3 meses'],['6','6 meses'],['12','12 meses']],String(cap.meses))+'</select></label></div>';
   var ins=tj.map(seqIn),R=SVE.SEQ.secuenciar(ins.filter(function(x){return x.largo>0&&x.ancho>0&&x.alto>0}),{ton:cap.ton,perf:cap.perf,relleno:cap.relleno},cap.meses),byId={};R.tajos.forEach(function(x){byId[x.id]=x});
-  function ti(f,k,st,ph){var v=(f.seq||{})[k];return '<input type="number" min="0" step="'+st+'" style="width:70px" data-seq="'+esc(f.id)+'" data-k="'+k+'" value="'+(v!=null?v:'')+'" placeholder="'+(ph||'')+'"'+(dis?' disabled':'')+'>'}
+  function ti(f,k,st,ph){var v=(f.seq||{})[k];return '<input type="number" min="0" step="'+st+'" style="width:70px" data-seq="'+esc(f.id)+'" data-k="'+k+'" value="'+esc(v!=null?v:'')+'" placeholder="'+esc(ph||'')+'"'+(dis?' disabled':'')+'>'}
   h+='<div class="tbl" style="margin-top:10px"><table><thead><tr><th>Tajo</th><th class="n">Largo (m)</th><th class="n">Manteo (°)</th><th class="n">Ley</th><th>Va después de</th><th>Relleno</th><th class="n">ELOS medido (m)</th><th class="n">Toneladas</th><th class="n">Dilución</th><th class="n">Ley diluida</th></tr></thead><tbody>'+
    tj.map(function(f){var x=byId[f.id],q=f.seq||{};return '<tr><td data-l="Tajo"><b>'+esc(f.nombre)+'</b><div class="mute" style="font-size:12px">'+f1(num(f.ancho))+' m de veta × '+f1(num(f.alto))+' m'+(x?' · ELOS '+f2(x.elosHW)+' m ('+x.fuenteElos+')':'')+'</div></td>'+
      '<td class="n" data-l="Largo (m)">'+ti(f,'largo',1)+'</td><td class="n" data-l="Manteo (°)">'+ti(f,'manteo',1,'75')+'</td><td class="n" data-l="Ley (g/t)">'+ti(f,'ley',0.1)+'</td>'+
@@ -1637,10 +1641,10 @@ function geoResHTML(fr,r){if(!r)return '<p class="note">Completa RQD, Jn, Jr y J
    (r.alertas.length?'<ul style="margin:8px 0 0;padding-left:18px">'+r.alertas.map(function(a){return '<li>'+esc(a)+'</li>'}).join('')+'</ul>':'')}
 function geoForm(){var fm=$('#geoForm');if(!fm)return;var fr=ui.geoFr&&D.frentes[ui.geoFr];if(!fr){fm.hidden=true;fm.innerHTML='';return}
   var g=(fr.geo&&fr.geo.in)||{},tajo=fr.tipo==='Tajo',dis=!canWrite;
-  function nf(k){return '<label class="f">'+k[1]+'<input type="number" min="0" step="'+k[2]+'" id="g_'+k[0]+'" value="'+(g[k[0]]!=null?g[k[0]]:'')+'"'+(dis?' disabled':'')+'></label>'}
+  function nf(k){return '<label class="f">'+k[1]+'<input type="number" min="0" step="'+k[2]+'" id="g_'+k[0]+'" value="'+esc(g[k[0]]!=null?g[k[0]]:'')+'"'+(dis?' disabled':'')+'></label>'}
   fm.hidden=false;fm.innerHTML='<div class="ph"><h3>Ficha geomecánica · '+esc(fr.nombre)+'</h3><small>una sola ficha por frente: la usan el diseño de voladura, el sostenimiento y la dilución</small></div>'+
    '<div class="fields">'+GEOF.map(nf).join('')+'<label class="f">Tipo de labor<select id="g_perm"'+(dis?' disabled':'')+'>'+opts([['perm','Permanente · galería, rampa, crucero (ESR 1,6)'],['temp','Temporal · tajo, subnivel (ESR 3,0)']],g.perm||(tajo?'temp':'perm'))+'</select></label>'+
-   (tajo?['A','B','C'].map(function(k){return '<label class="f">Factor '+k+' (Mathews)<input type="number" min="0" step="0.05" id="g_'+k+'" value="'+(g[k]!=null?g[k]:'')+'"'+(dis?' disabled':'')+'></label>'}).join(''):'')+'</div>'+
+   (tajo?['A','B','C'].map(function(k){return '<label class="f">Factor '+k+' (Mathews)<input type="number" min="0" step="0.05" id="g_'+k+'" value="'+esc(g[k]!=null?g[k]:'')+'"'+(dis?' disabled':'')+'></label>'}).join(''):'')+'</div>'+
    '<div id="geoRes">'+geoResHTML(fr,geoRes(fr,g))+'</div>'+
    '<p class="note">Q = (RQD/Jn)·(Jr/Ja)·(Jw/SRF), Barton et al. (1974). RMR = 9·ln Q + 44, Bieniawski (1976). Claro máximo sin sostener = 2·ESR·Q^0,4. Al guardar, la clase de roca del frente se actualiza en voladura, QAQC y el diseño Pro.</p>'+
    '<div class="row" style="margin-top:10px">'+(dis?'':'<button class="btn" type="submit">Guardar ficha</button>')+'<button class="btn ghost" type="button" data-act="geoCancel">Cerrar</button></div>'}
