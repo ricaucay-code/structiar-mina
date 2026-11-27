@@ -371,6 +371,7 @@ details.calc pre{white-space:pre-wrap;font:12px/1.65 var(--f-mono);background:va
         <div id="vt-dis" hidden><div class="g-dis"><div class="panel" id="disIn"></div><div class="panel" id="disOut"></div></div></div>
         <div id="vt-qa" hidden><div class="stack"><div class="kpis" id="qaKpis"></div><div class="g-dis"><div class="panel" id="qaForm"></div><div class="panel" id="qaRes"></div></div>
           <div class="panel"><div class="ph"><h3>Disparos evaluados</h3><small>últimos 30 días</small></div><div class="tbl"><table id="qaTbl"></table></div></div></div></div>
+        <div id="vt-pol" hidden><div class="stack"><div class="kpis" id="polKpis"></div><div class="g2"><form class="panel w" id="polForm"></form><div class="panel" id="polList"></div></div></div></div>
         <div id="vt-inf" hidden></div>
         <div id="vt-aj" hidden><form class="panel" id="proForm"></form></div>
         <div id="vt-lock" class="panel lock" hidden></div>
@@ -449,7 +450,7 @@ details.calc pre{white-space:pre-wrap;font:12px/1.65 var(--f-mono);background:va
 .planbox{display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center;font-size:14px}
 </style>
 <div class="auth" id="auth" hidden><div style="width:100%;max-width:420px">
-  <div class="brand"><img src="icons/icon-192.png" alt="" width="64" height="64" style="display:block;margin:0 auto 10px;border-radius:14px">STRUCT<b>IAR</b> MINA<small>Gestión de mina · prueba gratis de 7 días</small></div>
+  <div class="brand"><img src="icons/icon-192.png" alt="" width="64" height="64" style="display:block;margin:0 auto 10px;border-radius:14px">STRUCT<b>IAR</b> MINA<small>Gestión de mina · prueba gratis de 30 días</small></div>
   <div class="card" id="authCard"></div>
 </div></div>
 <script src="pro/engine-ciclo.js?v=20261123a"></script><script src="pro/engine-geomec.js?v=20261123a"></script><script src="pro/engine-seq.js?v=20261123a"></script><script src="vendor/supabase-2.118.0.js"></script>
@@ -678,6 +679,7 @@ function norm(c,o,id){if(!o||typeof o!=='object'||!IDRE.test(String(id)))return 
   Object.keys(o).forEach(function(k){if(typeof o[k]==='string'&&o[k].length>2000)o[k]=o[k].slice(0,2000)});
   STRF.forEach(function(k){if(o[k]!=null&&typeof o[k]!=='string')o[k]=String(o[k]).slice(0,300)});
   (NUMF[c]||[]).forEach(function(k){if(o[k]!=null)o[k]=num(o[k])});
+  if(c==='turnos'&&o.ing!=null){o.ing=Array.isArray(o.ing)?o.ing.filter(function(x){return x&&typeof x==='object'}).slice(0,200).map(function(x){return {id:String(x.id||'').slice(0,40),kg:Math.max(0,num(x.kg)),prod:String(x.prod==null?'':x.prod).slice(0,40),guia:String(x.guia==null?'':x.guia).slice(0,60),ts:+x.ts||0}}).filter(function(x){return x.kg>0}):[]}
   if(c==='turnos'){var p=o.plan&&typeof o.plan==='object'?o.plan:{};o.plan=Object.assign({},p,{av:num(p.av),t:num(p.t),dis:num(p.dis)})}
   if(c==='tareas'&&!COLS.some(function(x){return x[0]===o.col}))o.col='hacer';
   if(c==='frentes'){if(o.roca!=null&&!CLS.test(o.roca))delete o.roca;fixDis(o,'diseno');fixSeq(o);fixGeo(o)}
@@ -1216,6 +1218,51 @@ var cierreT;function saveCierre(){clearTimeout(cierreT);cierreT=setTimeout(funct
 
 /* ================= VOLADURA ================= */
 function vDefault(){var n=nowShift(),f=arr('frentes').filter(function(x){return x.activo})[0]||arr('frentes')[0]||{};return {fecha:n.fecha,turno:n.idx,frente:f.id||'',barra:6,perf:1.70,tal:26,talc:26,kg:'',avance:'',ancho:f.ancho||2,alto:f.alto||2,nota:''}}
+/* ---------- polvorín: saldo = conteo físico + ingresos − consumo de los disparos desde la fecha del conteo ---------- */
+var POL_PROD=['Dinamita','Emulsión','ANFO','Otro'];
+function polvorin(conteo,ingresos,disparos,hoy,ventana){
+  var c=conteo&&isFinite(+conteo.kg)&&/^\d{4}-\d{2}-\d{2}$/.test(conteo.fecha||'')?{kg:Math.max(0,+conteo.kg),fecha:conteo.fecha}:null,desde=c?c.fecha:ventana,d7=addDays(hoy,-6);
+  var ing=0,cons=0,cons7=0,av7=0,vol7=0,n7=0;
+  ingresos.forEach(function(x){if(x.fecha>=desde&&x.fecha<=hoy)ing+=x.kg});
+  disparos.forEach(function(d){var kg=num(d.kg);if(!(kg>0))return;if(d.fecha>=desde&&d.fecha<=hoy)cons+=kg;if(d.fecha>=d7&&d.fecha<=hoy){var k=calc(d);cons7+=kg;av7+=num(d.avance);vol7+=k.vol;n7++}});
+  var saldo=(c?c.kg:0)+ing-cons,dia=cons7/7;
+  return {conteo:c,desde:desde,ing:ing,cons:cons,saldo:saldo,cons7:cons7,n7:n7,kgm7:av7>0?cons7/av7:null,fc7:vol7>0?cons7/vol7:null,dias:dia>0&&saldo>0?saldo/dia:null,viejo:!!c&&c.fecha<ventana,neg:saldo<-0.05}}
+function polIngresos(){var r=[];arr('turnos').forEach(function(t){(t.ing||[]).forEach(function(x){r.push(Object.assign({fecha:t.fecha,i:t.i,tid:t.id},x))})});return r.sort(function(a,b){return (b.fecha+(b.ts||0)).localeCompare(a.fecha+(a.ts||0))})}
+function renderPol(full){
+  var hoy=ymd(new Date()),ven=addDays(hoy,-60),P=polvorin(cfg().polv,polIngresos(),arr('disparos'),hoy,ven);
+  function kp(l,v,u,s,cl){return '<div class="kpi '+(cl||'')+'"><div class="l">'+l+'</div><div class="v">'+v+'<small>'+u+'</small></div><div class="s">'+s+'</div></div>'}
+  $('#polKpis').innerHTML=kp('Saldo estimado',P.conteo||P.ing?f1(P.saldo):'–','kg',P.conteo?'desde el conteo del '+fDate(P.conteo.fecha):'sin conteo físico',P.neg?'bad':(P.dias!=null&&P.dias<3?'warn':''))+
+    kp('Consumo 7 días',f1(P.cons7),'kg',P.n7+' disparo(s)')+
+    kp('Explosivo por metro',P.kgm7!=null?f1(P.kgm7):'–','kg/m','últimos 7 días')+
+    kp('Alcanza para',P.dias!=null?f0(P.dias):'–','días',P.dias!=null?'al ritmo de la última semana':'registra conteo y disparos',P.dias!=null&&P.dias<3?'warn':'');
+  if(full||!$('#polForm').innerHTML){var adm=canAdmin,c=P.conteo;
+    $('#polForm').innerHTML='<div class="ph"><h3>Ingreso al polvorín</h3></div>'+(canWrite?'<div class="fields">'+
+      '<label class="f">Fecha<input type="date" id="pgF" value="'+hoy+'"></label>'+
+      '<label class="f">Producto<select id="pgP">'+POL_PROD.map(function(p){return '<option>'+p+'</option>'}).join('')+'</select></label>'+
+      '<label class="f">Cantidad (kg)<input type="number" id="pgK" step="0.1" min="0" placeholder="0"></label>'+
+      '<label class="f">Guía o remisión<input id="pgG" maxlength="60" placeholder="N.º de guía"></label></div>'+
+      '<div class="row" style="margin-top:12px"><button class="btn" type="button" data-act="polIng">Registrar ingreso</button></div>':'<p class="note">Tu acceso es de solo lectura.</p>')+
+      '<div class="ph" style="margin-top:18px"><h3>Conteo físico</h3><small>cuenta lo que hay en el polvorín y anótalo: el saldo parte de aquí</small></div>'+
+      (adm?'<div class="fields"><label class="f">Fecha del conteo<input type="date" id="pcF" value="'+esc(c?c.fecha:hoy)+'"></label><label class="f">Total en polvorín (kg)<input type="number" id="pcK" step="0.1" min="0" value="'+(c?esc(c.kg):'')+'"></label></div>'+
+        '<div class="row" style="margin-top:12px"><button class="btn ghost" type="button" data-act="polConteo">Guardar conteo</button></div>':
+        '<p class="note">'+(c?'Último conteo: '+f1(c.kg)+' kg el '+fDate(c.fecha)+'.':'Aún no hay conteo.')+' Lo registra el administrador de la mina.</p>')}
+  var al=[];if(!P.conteo)al.push('Haz un conteo físico del polvorín y anótalo: sin él, el saldo solo suma ingresos menos consumo de los últimos 60 días.');
+  if(P.viejo)al.push('El último conteo tiene más de 60 días. Haz uno nuevo para que el saldo sea confiable.');
+  if(P.neg)al.push('El saldo dio negativo: falta registrar un ingreso o hay un disparo con kilos mal anotados.');
+  if(P.dias!=null&&P.dias<3)al.push('Quedan menos de 3 días de explosivo al ritmo actual. Programa el pedido.');
+  var ls=polIngresos().slice(0,12);
+  $('#polList').innerHTML='<div class="ph"><h3>Movimientos</h3><small>ingresos '+f1(P.ing)+' kg · consumo '+f1(P.cons)+' kg desde '+fDate(P.desde)+'</small></div>'+
+    (al.length?'<div class="advice warn"><ul>'+al.map(function(t){return '<li>'+t+'</li>'}).join('')+'</ul></div>':'')+
+    '<div class="tbl"><table><thead><tr><th>Fecha</th><th>Producto</th><th class="n">kg</th><th>Guía</th><th class="w"></th></tr></thead><tbody>'+
+    (ls.length?ls.map(function(x){return '<tr><td>'+fDate(x.fecha)+'</td><td>'+esc(x.prod)+'</td><td class="n">'+f1(x.kg)+'</td><td>'+esc(x.guia||'—')+'</td><td class="w">'+(canWrite?'<button class="btn ghost sm" type="button" data-act="polDel" data-id="'+esc(x.tid+'|'+x.id)+'" aria-label="Borrar ingreso">✕</button>':'')+'</td></tr>'}).join(''):'<tr><td colspan="5" class="mute">Aún no hay ingresos registrados.</td></tr>')+
+    '</tbody></table></div><p class="note" style="margin:10px 0 0">El consumo sale de los kilos de explosivo de cada disparo registrado.</p>'}
+function polIng(){var f=$('#pgF').value,k=num($('#pgK').value),p=$('#pgP').value,g=$('#pgG').value.trim().slice(0,60);
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(f)){toast('Elige la fecha');return}if(!(k>0)){toast('Escribe los kilos que ingresaron');$('#pgK').focus();return}if(k>100000){toast('Revisa la cantidad');return}
+  var i=nowShift().fecha===f?nowShift().idx:0,t=Object.assign({},tGet(f,i));t.ing=(t.ing||[]).concat([{id:uid(),kg:k,prod:POL_PROD.indexOf(p)>=0?p:'Otro',guia:g,ts:Date.now()}]);put('turnos',t);
+  $('#pgK').value='';$('#pgG').value='';toast('Ingreso de '+f1(k)+' kg registrado');renderPol(false)}
+function polConteo(){var f=$('#pcF').value,k=$('#pcK').value;if(!/^\d{4}-\d{2}-\d{2}$/.test(f)){toast('Elige la fecha del conteo');return}if(k===''||!(num(k)>=0)){toast('Escribe el total contado');return}
+  putCfg({polv:{kg:num(k),fecha:f}});toast('Conteo guardado');renderPol(true)}
+function polDel(v){var p=String(v).split('|'),t=D.turnos[p[0]];if(!t||!confirm('¿Borrar este ingreso?'))return;var n=Object.assign({},t);n.ing=(t.ing||[]).filter(function(x){return x.id!==p[1]});put('turnos',n);renderPol(false)}
 function renderReg(full){
   if(!vDraft||(vDraft.frente&&!D.frentes[vDraft.frente]))vDraft=vDefault();
   if(full||!$('#volForm').innerHTML)volForm();
@@ -1309,6 +1356,7 @@ function mallaSVG(e){
   return out+'</svg>';
 }
 var VT=[['reg','Registro',0,'Registro de disparos','Un disparo en un minuto: calcula eficiencia, volumen, toneladas y factor de carga, y suma el avance al control del turno.'],
+  ['pol','Polvorín',0,'Control de explosivos','Ingresos al polvorín, consumo de cada disparo y saldo estimado desde el último conteo físico.'],
   ['dis','Diseño',1,'Diseño de malla','Elige el frente y la calidad de roca. El motor calcula la malla, el arranque, la carga y el sostenimiento según el estándar de la mina.'],
   ['qa','QAQC',1,'Control de calidad del disparo','Evalúa cada disparo contra su diseño en 8 criterios. Lo que no cumple se vuelve una acción en el tablero.'],
   ['inf','Informe',1,'Informe QAQC','Cumplimiento por criterio y por frente, no conformidades y acciones. Descárgalo en PDF para la gerencia.'],
@@ -1320,7 +1368,7 @@ function renderVol(full){
   var lk=cur[2]&&!lic().pro;$('#vt-lock').hidden=!lk;
   VT.forEach(function(t){$('#vt-'+t[0]).hidden=lk||t[0]!==ui.vTab});
   if(lk){var L=lic();$('#vt-lock').innerHTML='<h3>'+esc(cur[1])+' es parte del Plan Pro</h3><p>El motor de diseño de malla, el QAQC de 8 criterios con informe en PDF y el análisis con IA están en el Plan Pro: USD 99/mes por mina (Básico + USD 70).</p>'+(L.pagoPro?'<a class="btn" href="'+esc(L.pagoPro)+'" target="_blank" rel="noopener">Pasar a Pro</a> ':'')+(L.wa?'<a class="btn ghost" href="'+esc(L.wa)+'" target="_blank" rel="noopener">Escríbenos</a>':'');return}
-  if(ui.vTab==='reg')renderReg(full);else if(ui.vTab==='dis')renderDis(full);else if(ui.vTab==='qa')renderQA(full);else if(ui.vTab==='inf')renderInf();else renderAj(full);
+  if(ui.vTab==='reg')renderReg(full);else if(ui.vTab==='pol')renderPol(full);else if(ui.vTab==='dis')renderDis(full);else if(ui.vTab==='qa')renderQA(full);else if(ui.vTab==='inf')renderInf();else renderAj(full);
 }
 /* ---- Diseño ---- */
 function disFrente(){if(!ui.disFr||!D.frentes[ui.disFr]){var f=arr('frentes').filter(function(x){return x.activo})[0]||arr('frentes')[0];ui.disFr=f?f.id:'';ui.disRoca=f&&f.roca||'III'}return D.frentes[ui.disFr]||null}
@@ -1669,6 +1717,9 @@ document.addEventListener('click',function(e){
   var b=e.target.closest('[data-act]');if(!b)return;var a=b.dataset.act,id=b.dataset.id;
   switch(a){
   case 'noConfirm':ui.confirm=null;ui.parFor=null;schedule(true);return;
+  case 'polIng':polIng();return;
+  case 'polConteo':polConteo();return;
+  case 'polDel':polDel(id);return;
   case 'vtab':ui.vTab=b.dataset.t;if(ui.view!=='voladura')location.hash='#voladura';else renderVol(true);return;
   case 'goQA':ui.vTab='qa';ui.qaId=null;if(ui.view==='voladura'){e.preventDefault();renderVol(true)}return;
   case 'roca':ui.disRoca=b.dataset.r;renderDis(true);return;
